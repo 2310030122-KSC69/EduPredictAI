@@ -1,0 +1,847 @@
+{
+  "users": {
+    "admin001": {
+      "id": "admin001",
+      "role": "admin",
+      "name": "Dr. Rajesh Kumar",
+      "email": "admin@edupredict.edu",
+      "password": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
+      "department": "Computer Science",
+      "phone": "9876543210",
+      "created_at": "2026-04-02 13:11:44.663635",
+      "avatar": "RK"
+    },
+    "STU0001": {
+      "id": "STU0001",
+      "role": "student",
+      "name": "umesh",
+      "email": "aisha@student.edu",
+      "password": "703b0a3d6ad75b649a28adde7d83c6251da457549263bc7ff45ec709b0a8448b",
+      "created_at": "2026-04-02 13:11:44.665148"
+    },
+    "STU0002": {
+      "id": "STU0002",
+      "role": "student",
+      "name": "yougander",
+      "email": "mali@student.edu",
+      "password": "703b0a3d6ad75b649a28adde7d83c6251da457549263bc7ff45ec709b0a8448b",
+      "created_at": "2026-04-02 13:11:44.665148"
+    },
+    "STU0003": {
+      "id": "STU0003",
+      "role": "student",
+      "name": "Priya Reddy",
+      "email": "priya@student.edu",
+      "password": "703b0a3d6ad75b649a28adde7d83c6251da457549263bc7ff45ec709b0a8448b",
+      "created_at": "2026-04-02 13:11:44.665148"
+    },
+    "STU0004": {
+      "id": "STU0004",
+      "role": "student",
+      "name": "Vikram Singh",
+      "email": "vikram@student.edu",
+      "password": "703b0a3d6ad75b649a28adde7d83c6251da457549263bc7ff45ec709b0a8448b",
+      "created_at": "2026-04-02 13:11:44.666161"
+    },
+    "STU0005": {
+      "id": "STU0005",
+      "role": "student",
+      "name": "Sneha Patel",
+      "email": "sneha@student.edu",
+      "password": "703b0a3d6ad75b649a28adde7d83c6251da457549263bc7ff45ec709b0a8448b",
+      "created_at": "2026-04-02 13:11:44.666161"
+    },
+    "fac001": {
+      "id": "fac001",
+      "role": "faculty",
+      "name": "Prof. Anitha Rao",
+      "email": "anitha@edupredict.edu",
+      "password": "27041f5856c7387a997252694afb048d1aa939228ffcdbd6285b979b8da20e7a",
+      "department": "Computer Science",
+      "phone": "9876543211",
+      "subjects": [
+        "Data Structures",
+        "Algorithms",
+        "ML"
+      ],
+      "created_at": "2025-01-01 00:00:00",
+      "avatar": "AR"
+    },
+    "fac002": {
+      "id": "fac002",
+      "role": "faculty",
+      "name": "Prof. Suresh Babu",
+      "email": "suresh@edupredict.edu",
+      "password": "27041f5856c7387a997252694afb048d1aa939228ffcdbd6285b979b8da20e7a",
+      "department": "Computer Science",
+      "phone": "9876543212",
+      "subjects": [
+        "DBMS",
+        "OS",
+        "CN"
+      ],
+      "created_at": "2025-01-01 00:00:00",
+      "avatar": "SB"
+    }
+  },
+  "students": {
+    "STU0001": {
+      "id": "STU0001",
+      "roll_no": "CS2021001",
+      "name": "umesh",
+      "email": "aisha@student.edu",
+      "phone": "9000000001",
+      "dob": "2002-05-14",
+      "address": "Hyderabad",
+      "course": "B.Tech CS",
+      "semester": "6",
+      "guardian": "Ramesh Sharma",
+      "guardian_phone": "9000000010",
+      "avatar": "U",
+      "admission_year": 2021,
+      "created_at": "2026-04-02 13:11:44.665148"
+    },
+    "STU0002": {
+      "id": "STU0002",
+      "roll_no": "CS2021002",
+      "name": "yougander",
+      "email": "mali@student.edu",
+      "phone": "9000000002",
+      "dob": "2002-08-22",
+      "address": "Secunderabad",
+      "course": "B.Tech CS",
+      "semester": "6",
+      "guardian": "Ahmed Ali",
+      "guardian_phone": "9000000020",
+      "avatar": "Y",
+      "admission_year": 2022,
+      "created_at": "2026-04-02 13:11:44.665148"
+    },
+    "STU0003": {
+      "id": "STU0003",
+      "roll_no": "CS2021003",
+      "name": "Priya Reddy",
+      "email": "priya@student.edu",
+      "phone": "9000000003",
+      "dob": "2003-01-10",
+      "address": "Warangal",
+      "course": "B.Tech CS",
+      "semester": 5,
+      "guardian": "Srinivas Reddy",
+      "guardian_phone": "9000000030",
+      "avatar": "PR",
+      "admission_year": 2021,
+      "created_at": "2026-04-02 13:11:44.665148"
+    },
+    "STU0004": {
+      "id": "STU0004",
+      "roll_no": "EC2022001",
+      "name": "Vikram Singh",
+      "email": "vikram@student.edu",
+      "phone": "9000000004",
+      "dob": "2003-11-30",
+      "address": "Karimnagar",
+      "course": "B.Tech ECE",
+      "semester": 4,
+      "guardian": "Balveer Singh",
+      "guardian_phone": "9000000040",
+      "avatar": "VS",
+      "admission_year": 2022,
+      "created_at": "2026-04-02 13:11:44.666161"
+    },
+    "STU0005": {
+      "id": "STU0005",
+      "roll_no": "ME2022002",
+      "name": "Sneha Patel",
+      "email": "sneha@student.edu",
+      "phone": "9000000005",
+      "dob": "2003-07-19",
+      "address": "Nizamabad",
+      "course": "B.Tech ME",
+      "semester": 4,
+      "guardian": "Ravi Patel",
+      "guardian_phone": "9000000050",
+      "avatar": "SP",
+      "admission_year": 2021,
+      "created_at": "2026-04-02 13:11:44.666161"
+    }
+  },
+  "attendance": {
+    "STU0001": {
+      "Data Structures": {
+        "total": 56,
+        "present": 51,
+        "records": []
+      },
+      "Algorithms": {
+        "total": 74,
+        "present": 61,
+        "records": [
+          {
+            "date": "2026-04-02",
+            "status": "present"
+          },
+          {
+            "date": "2026-04-02",
+            "status": "absent"
+          },
+          {
+            "date": "2026-04-02",
+            "status": "absent"
+          },
+          {
+            "date": "2026-04-02",
+            "status": "present"
+          },
+          {
+            "date": "2026-04-02",
+            "status": "present"
+          },
+          {
+            "date": "2026-04-03",
+            "status": "present"
+          },
+          {
+            "date": "2026-04-03",
+            "status": "absent"
+          },
+          {
+            "date": "2026-04-03",
+            "status": "absent"
+          },
+          {
+            "date": "2026-04-03",
+            "status": "absent"
+          },
+          {
+            "date": "2026-04-03",
+            "status": "absent"
+          }
+        ]
+      },
+      "DBMS": {
+        "total": 78,
+        "present": 66,
+        "records": []
+      },
+      "OS": {
+        "total": 75,
+        "present": 52,
+        "records": []
+      },
+      "CN": {
+        "total": 63,
+        "present": 49,
+        "records": [
+          {
+            "date": "2026-04-02",
+            "status": "present"
+          },
+          {
+            "date": "2026-04-02",
+            "status": "absent"
+          },
+          {
+            "date": "2026-04-02",
+            "status": "absent"
+          }
+        ]
+      },
+      "ML": {
+        "total": 70,
+        "present": 59,
+        "records": []
+      }
+    },
+    "STU0002": {
+      "Data Structures": {
+        "total": 68,
+        "present": 52,
+        "records": []
+      },
+      "Algorithms": {
+        "total": 71,
+        "present": 60,
+        "records": [
+          {
+            "date": "2026-04-02",
+            "status": "present"
+          },
+          {
+            "date": "2026-04-02",
+            "status": "present"
+          }
+        ]
+      },
+      "DBMS": {
+        "total": 52,
+        "present": 48,
+        "records": []
+      },
+      "OS": {
+        "total": 56,
+        "present": 39,
+        "records": []
+      },
+      "CN": {
+        "total": 56,
+        "present": 36,
+        "records": []
+      },
+      "ML": {
+        "total": 74,
+        "present": 71,
+        "records": []
+      }
+    },
+    "STU0003": {
+      "Data Structures": {
+        "total": 67,
+        "present": 60,
+        "records": []
+      },
+      "Algorithms": {
+        "total": 51,
+        "present": 39,
+        "records": []
+      },
+      "DBMS": {
+        "total": 53,
+        "present": 44,
+        "records": []
+      },
+      "OS": {
+        "total": 65,
+        "present": 49,
+        "records": []
+      },
+      "CN": {
+        "total": 63,
+        "present": 45,
+        "records": []
+      },
+      "ML": {
+        "total": 74,
+        "present": 71,
+        "records": []
+      }
+    },
+    "STU0004": {
+      "Signals": {
+        "total": 66,
+        "present": 58,
+        "records": []
+      },
+      "Electronics": {
+        "total": 52,
+        "present": 47,
+        "records": []
+      },
+      "Communication": {
+        "total": 54,
+        "present": 51,
+        "records": []
+      },
+      "VLSI": {
+        "total": 75,
+        "present": 51,
+        "records": []
+      },
+      "Embedded": {
+        "total": 56,
+        "present": 52,
+        "records": []
+      }
+    },
+    "STU0005": {
+      "Thermodynamics": {
+        "total": 63,
+        "present": 51,
+        "records": []
+      },
+      "Fluid Mechanics": {
+        "total": 58,
+        "present": 51,
+        "records": []
+      },
+      "Manufacturing": {
+        "total": 75,
+        "present": 49,
+        "records": []
+      },
+      "Design": {
+        "total": 62,
+        "present": 44,
+        "records": []
+      }
+    }
+  },
+  "marks": {
+    "STU0001": {
+      "Data Structures": {
+        "insem1": 19,
+        "insem_lab": 0,
+        "insem2": 14,
+        "end_sem": 51,
+        "end_lab": 8
+      },
+      "Algorithms": {
+        "insem1": 19,
+        "insem_lab": 0,
+        "insem2": 23,
+        "end_sem": 87,
+        "end_lab": 8
+      },
+      "DBMS": {
+        "insem1": 13,
+        "insem_lab": 0,
+        "insem2": 23,
+        "end_sem": 82,
+        "end_lab": 7
+      },
+      "OS": {
+        "insem1": 23,
+        "insem_lab": 0,
+        "insem2": 21,
+        "end_sem": 93,
+        "end_lab": 8
+      },
+      "CN": {
+        "insem1": 20,
+        "insem_lab": 0,
+        "insem2": 12,
+        "end_sem": 91,
+        "end_lab": 9
+      },
+      "ML": {
+        "insem1": 23,
+        "insem_lab": 0,
+        "insem2": 23,
+        "end_sem": 96,
+        "end_lab": 9
+      }
+    },
+    "STU0002": {
+      "Data Structures": {
+        "insem1": 13,
+        "insem_lab": 0,
+        "insem2": 21,
+        "end_sem": 75,
+        "end_lab": 7
+      },
+      "Algorithms": {
+        "insem1": 16,
+        "insem_lab": 0,
+        "insem2": 13,
+        "end_sem": 56,
+        "end_lab": 9
+      },
+      "DBMS": {
+        "insem1": 23,
+        "insem_lab": 0,
+        "insem2": 24,
+        "end_sem": 84,
+        "end_lab": 9
+      },
+      "OS": {
+        "insem1": 12,
+        "insem_lab": 0,
+        "insem2": 15,
+        "end_sem": 89,
+        "end_lab": 8
+      },
+      "CN": {
+        "insem1": 15,
+        "insem_lab": 0,
+        "insem2": 13,
+        "end_sem": 55,
+        "end_lab": 8
+      },
+      "ML": {
+        "insem1": 17,
+        "insem_lab": 0,
+        "insem2": 21,
+        "end_sem": 78,
+        "end_lab": 8
+      }
+    },
+    "STU0003": {
+      "Data Structures": {
+        "insem1": 16,
+        "insem_lab": 0,
+        "insem2": 24,
+        "end_sem": 96,
+        "end_lab": 8
+      },
+      "Algorithms": {
+        "insem1": 16,
+        "insem_lab": 0,
+        "insem2": 19,
+        "end_sem": 74,
+        "end_lab": 8
+      },
+      "DBMS": {
+        "insem1": 23,
+        "insem_lab": 0,
+        "insem2": 23,
+        "end_sem": 90,
+        "end_lab": 7
+      },
+      "OS": {
+        "insem1": 24,
+        "insem_lab": 0,
+        "insem2": 24,
+        "end_sem": 74,
+        "end_lab": 7
+      },
+      "CN": {
+        "insem1": 18,
+        "insem_lab": 0,
+        "insem2": 20,
+        "end_sem": 93,
+        "end_lab": 7
+      },
+      "ML": {
+        "insem1": 19,
+        "insem_lab": 0,
+        "insem2": 19,
+        "end_sem": 60,
+        "end_lab": 9
+      }
+    },
+    "STU0004": {
+      "Signals": {
+        "insem1": 23,
+        "insem_lab": 0,
+        "insem2": 13,
+        "end_sem": 97,
+        "end_lab": 7
+      },
+      "Electronics": {
+        "insem1": 18,
+        "insem_lab": 0,
+        "insem2": 18,
+        "end_sem": 73,
+        "end_lab": 8
+      },
+      "Communication": {
+        "insem1": 16,
+        "insem_lab": 0,
+        "insem2": 14,
+        "end_sem": 76,
+        "end_lab": 8
+      },
+      "VLSI": {
+        "insem1": 14,
+        "insem_lab": 0,
+        "insem2": 12,
+        "end_sem": 86,
+        "end_lab": 9
+      },
+      "Embedded": {
+        "insem1": 14,
+        "insem_lab": 0,
+        "insem2": 12,
+        "end_sem": 75,
+        "end_lab": 7
+      }
+    },
+    "STU0005": {
+      "Thermodynamics": {
+        "insem1": 18,
+        "insem_lab": 0,
+        "insem2": 12,
+        "end_sem": 81,
+        "end_lab": 7
+      },
+      "Fluid Mechanics": {
+        "insem1": 15,
+        "insem_lab": 0,
+        "insem2": 16,
+        "end_sem": 88,
+        "end_lab": 9
+      },
+      "Manufacturing": {
+        "insem1": 24,
+        "insem_lab": 0,
+        "insem2": 22,
+        "end_sem": 85,
+        "end_lab": 7
+      },
+      "Design": {
+        "insem1": 24,
+        "insem_lab": 0,
+        "insem2": 18,
+        "end_sem": 71,
+        "end_lab": 9
+      }
+    }
+  },
+  "fees": {
+    "STU0001": {
+      "total_due": 85000,
+      "paid": 42500,
+      "transactions": [
+        {
+          "id": "bf440336",
+          "amount": 42500,
+          "date": "2024-08-01",
+          "mode": "Online",
+          "receipt": "RCP0001001",
+          "status": "Paid"
+        }
+      ]
+    },
+    "STU0002": {
+      "total_due": 85000,
+      "paid": 85000,
+      "transactions": [
+        {
+          "id": "f321121e",
+          "amount": 85000,
+          "date": "2024-08-01",
+          "mode": "Online",
+          "receipt": "RCP0002001",
+          "status": "Paid"
+        }
+      ]
+    },
+    "STU0003": {
+      "total_due": 85000,
+      "paid": 85000,
+      "transactions": [
+        {
+          "id": "9e8de89b",
+          "amount": 85000,
+          "date": "2024-08-01",
+          "mode": "Online",
+          "receipt": "RCP0003001",
+          "status": "Paid"
+        }
+      ]
+    },
+    "STU0004": {
+      "total_due": 85000,
+      "paid": 85000,
+      "transactions": [
+        {
+          "id": "5aecdc41",
+          "amount": 85000,
+          "date": "2024-08-01",
+          "mode": "Online",
+          "receipt": "RCP0004001",
+          "status": "Paid"
+        }
+      ]
+    },
+    "STU0005": {
+      "total_due": 85000,
+      "paid": 42500,
+      "transactions": [
+        {
+          "id": "6873fe2a",
+          "amount": 42500,
+          "date": "2024-08-01",
+          "mode": "Online",
+          "receipt": "RCP0005001",
+          "status": "Paid"
+        }
+      ]
+    }
+  },
+  "announcements": [
+    {
+      "id": "7b2756fb",
+      "title": "placement success meet",
+      "body": "all 3rd and final years should come to clg\nattendence is mandatory",
+      "priority": "high",
+      "date": "2026-04-02",
+      "by": "Dr. Rajesh Kumar"
+    },
+    {
+      "id": "ann001",
+      "title": "Mid Semester Exams",
+      "body": "Mid semester exams will be held from 15th Oct. Timetable attached.",
+      "date": "2024-09-25",
+      "priority": "high",
+      "by": "Admin"
+    },
+    {
+      "id": "ann002",
+      "title": "Fee Payment Reminder",
+      "body": "Last date for second semester fee payment is 30th September.",
+      "date": "2024-09-20",
+      "priority": "medium",
+      "by": "Admin"
+    },
+    {
+      "id": "ann003",
+      "title": "Hackathon Registration",
+      "body": "Register for the inter-college hackathon by 5th October.",
+      "date": "2024-09-18",
+      "priority": "low",
+      "by": "Admin"
+    }
+  ],
+  "notifications": {
+    "STU0001": [
+      {
+        "id": "eebf81d5",
+        "type": "info",
+        "msg": "New announcement: placement success meet",
+        "date": "2026-04-02",
+        "read": true
+      }
+    ],
+    "STU0002": [
+      {
+        "id": "c7e39ffb",
+        "type": "info",
+        "msg": "New announcement: placement success meet",
+        "date": "2026-04-02",
+        "read": false
+      }
+    ],
+    "STU0003": [
+      {
+        "id": "74fa3b42",
+        "type": "info",
+        "msg": "New announcement: placement success meet",
+        "date": "2026-04-02",
+        "read": false
+      }
+    ],
+    "STU0004": [
+      {
+        "id": "a89baa37",
+        "type": "info",
+        "msg": "New announcement: placement success meet",
+        "date": "2026-04-02",
+        "read": false
+      }
+    ],
+    "STU0005": [
+      {
+        "id": "a6894450",
+        "type": "info",
+        "msg": "New announcement: placement success meet",
+        "date": "2026-04-02",
+        "read": false
+      }
+    ]
+  },
+  "faculty": {
+    "fac001": {
+      "id": "fac001",
+      "name": "Prof. Anitha Rao",
+      "email": "anitha@edupredict.edu",
+      "department": "CS",
+      "subjects": [
+        "Data Structures",
+        "Algorithms",
+        "ML"
+      ],
+      "phone": "9876543211",
+      "avatar": "AR",
+      "designation": "Associate Professor"
+    },
+    "fac002": {
+      "id": "fac002",
+      "name": "Prof. Suresh Babu",
+      "email": "suresh@edupredict.edu",
+      "department": "CS",
+      "subjects": [
+        "DBMS",
+        "OS",
+        "CN"
+      ],
+      "phone": "9876543212",
+      "avatar": "SB",
+      "designation": "Assistant Professor"
+    }
+  },
+  "quiz_attempts": {
+    "STU0001": {
+      "total_answered": 2,
+      "total_correct": 2,
+      "streak": 2,
+      "xp": 20,
+      "level": 1,
+      "badges": [],
+      "subject_stats": {
+        "Mixed": {
+          "answered": 2,
+          "correct": 2
+        }
+      }
+    },
+    "STU0002": {
+      "total_answered": 0,
+      "total_correct": 0,
+      "streak": 0,
+      "xp": 0,
+      "level": 1,
+      "badges": [],
+      "subject_stats": {}
+    },
+    "STU0003": {
+      "total_answered": 0,
+      "total_correct": 0,
+      "streak": 0,
+      "xp": 0,
+      "level": 1,
+      "badges": [],
+      "subject_stats": {}
+    },
+    "STU0004": {
+      "total_answered": 0,
+      "total_correct": 0,
+      "streak": 0,
+      "xp": 0,
+      "level": 1,
+      "badges": [],
+      "subject_stats": {}
+    },
+    "STU0005": {
+      "total_answered": 0,
+      "total_correct": 0,
+      "streak": 0,
+      "xp": 0,
+      "level": 1,
+      "badges": [],
+      "subject_stats": {}
+    }
+  },
+  "leaderboard": {
+    "STU0001": {
+      "name": "umesh",
+      "avatar": "U",
+      "xp": 20,
+      "level": 1
+    },
+    "STU0002": {
+      "name": "yougander",
+      "avatar": "Y",
+      "xp": 0,
+      "level": 1
+    },
+    "STU0003": {
+      "name": "Priya Reddy",
+      "avatar": "PR",
+      "xp": 0,
+      "level": 1
+    },
+    "STU0004": {
+      "name": "Vikram Singh",
+      "avatar": "VS",
+      "xp": 0,
+      "level": 1
+    },
+    "STU0005": {
+      "name": "Sneha Patel",
+      "avatar": "SP",
+      "xp": 0,
+      "level": 1
+    }
+  }
+}

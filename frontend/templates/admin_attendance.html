@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Attendance – EduPredict{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block body %}
+<div class="app-layout">
+  {% include "admin_layout.html" %}
+  <div class="app-main">
+    <header class="app-header">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-title"><h1>Attendance</h1><span class="header-sub">Manage student attendance records</span></div>
+    </header>
+
+    <div class="page-body">
+      <div class="toolbar">
+        <input class="search-input" id="searchInput" placeholder="Search student..." oninput="filterAtt()"/>
+        <input type="date" class="filter-select" id="dateInput" style="padding:.55rem .9rem"/>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Mark Attendance</h3></div>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Student</th><th>Roll No</th><th>Subject</th><th>Present %</th><th>Status</th><th>Mark Today</th></tr></thead>
+              <tbody id="attBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Low Attendance Alert (&lt;75%)</h3></div>
+        <div class="card-body" id="lowAttList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let attData = {};
+let today = new Date().toISOString().split('T')[0];
+document.getElementById('dateInput').value = today;
+
+async function loadAtt() {
+  attData = await fetch('/api/admin/attendance').then(r=>r.json());
+  renderAtt();
+}
+
+function renderAtt() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const rows = [];
+  const low = [];
+
+  Object.entries(attData).forEach(([sid, d]) => {
+    if (q && !d.name.toLowerCase().includes(q) && !d.roll_no.toLowerCase().includes(q)) return;
+    Object.entries(d.subjects||{}).forEach(([sub, att]) => {
+      const rate = att.total>0 ? (att.present/att.total*100).toFixed(1) : 0;
+      rows.push(`
+        <tr>
+          <td><div class="student-cell"><div class="avatar">${d.avatar||d.name.substring(0,2).toUpperCase()}</div><span>${d.name}</span></div></td>
+          <td><code>${d.roll_no}</code></td>
+          <td>${sub}</td>
+          <td>
+            <div class="mini-bar-wrap">
+              <div class="mini-bar"><div class="mini-fill ${rate>=75?'green':'red'}" style="width:${Math.min(rate,100)}%"></div></div>
+              <span>${rate}%</span>
+            </div>
+          </td>
+          <td><span class="badge ${rate>=75?'badge-green':'badge-red'}">${rate>=75?'Safe':'Low'}</span></td>
+          <td class="action-cell">
+            <button class="btn-xs btn-present" onclick="mark('${sid}','${sub}','present')">✓ Present</button>
+            <button class="btn-xs btn-danger" onclick="mark('${sid}','${sub}','absent')">✗ Absent</button>
+          </td>
+        </tr>
+      `);
+      if (rate < 75) {
+        low.push(`<div class="alert-row"><span class="alert-name">${d.name}</span><span class="alert-sub">${sub}</span><span class="badge badge-red">${rate}%</span></div>`);
+      }
+    });
+  });
+
+  document.getElementById('attBody').innerHTML = rows.join('') || '<tr><td colspan="6" class="loading-row">No data</td></tr>';
+  document.getElementById('lowAttList').innerHTML = low.length ? low.join('') : '<div class="empty-state">No students with low attendance. 🎉</div>';
+}
+
+async function mark(sid, subject, action) {
+  const date = document.getElementById('dateInput').value || today;
+  const res = await fetch(`/api/admin/attendance/${sid}`, {
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({subject, action, date})
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast(`Marked ${action} for ${subject} (${data.rate}%)`, action==='present'?'success':'info');
+    loadAtt();
+  }
+}
+
+function filterAtt() { renderAtt(); }
+
+function showToast(msg, type='success') {
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.classList.add('show'),10);
+  setTimeout(()=>{t.classList.remove('show'); setTimeout(()=>t.remove(),300)}, 3000);
+}
+
+loadAtt();
+</script>
+{% endblock %}

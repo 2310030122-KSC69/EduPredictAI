@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+{% block title %}Quiz Arena – EduPredict{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block body %}
+<div class="app-layout">
+  {% include "student_layout.html" %}
+  <div class="app-main">
+    <header class="app-header">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-title">
+        <h1>⚡ Quiz Arena</h1>
+        <span class="header-sub">Practice concepts — earn XP — climb the leaderboard</span>
+      </div>
+      <div class="header-right">
+        <div style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;font-weight:700;color:var(--yellow)">
+          <span>✨</span><span id="hXP">0 XP</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="page-body">
+
+      <!-- HUD Row -->
+      <div class="quiz-hud">
+        <div class="hud-card">
+          <div class="hud-icon">✨</div>
+          <div class="hud-val hud-xp" id="hudXP">0</div>
+          <div class="hud-label">Total XP</div>
+        </div>
+        <div class="hud-card">
+          <div class="hud-icon">🔥</div>
+          <div class="hud-val hud-streak" id="hudStreak">0</div>
+          <div class="hud-label">Streak</div>
+        </div>
+        <div class="hud-card">
+          <div class="hud-icon">✅</div>
+          <div class="hud-val hud-correct" id="hudCorrect">0</div>
+          <div class="hud-label">Correct</div>
+        </div>
+        <div class="hud-card">
+          <div class="hud-icon">🎯</div>
+          <div class="hud-val" id="hudAcc" style="color:var(--blue)">--</div>
+          <div class="hud-label">Accuracy</div>
+        </div>
+      </div>
+
+      <!-- Level Bar -->
+      <div class="card">
+        <div class="card-body" style="padding:.9rem 1.3rem">
+          <div class="level-wrap">
+            <div class="level-num" id="levelNum">1</div>
+            <div class="level-bar-wrap">
+              <div class="level-label">
+                <span>Level <span id="levelLabel">1</span></span>
+                <span id="xpToNext">200 XP to next level</span>
+              </div>
+              <div class="level-track"><div class="level-fill" id="levelFill" style="width:0%"></div></div>
+            </div>
+            <div style="margin-left:.8rem;text-align:center">
+              <div style="font-size:.75rem;color:var(--muted);text-transform:uppercase">Rank</div>
+              <div style="font-weight:800;color:var(--accent2)" id="rankDisplay">--</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Streak Banner -->
+      <div class="streak-banner" id="streakBanner">
+        <div class="streak-fire">🔥</div>
+        <div class="streak-text">You're on a <strong id="streakNum">0</strong>-question streak! Keep it up!</div>
+      </div>
+
+      <div class="grid-2">
+
+        <!-- LEFT: Subject selector + Question -->
+        <div style="display:flex;flex-direction:column;gap:1rem">
+
+          <div class="card">
+            <div class="card-header"><h3>Subject Focus</h3></div>
+            <div class="card-body">
+              <div class="quiz-subject-bar" id="subjectBar">
+                <div class="sub-chip active" onclick="selectSub('')">🎲 Mixed</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="question-card" id="questionCard">
+            <div class="predict-placeholder" id="startPlaceholder">
+              <div class="pp-icon">🧠</div>
+              <div style="font-weight:700;font-size:1.1rem;margin-bottom:.5rem">Ready to test your knowledge?</div>
+              <div style="color:var(--text2);margin-bottom:1.5rem">Answer questions, build streaks, earn XP and badges!</div>
+              <button class="btn-primary" style="padding:.8rem 2rem;font-size:1rem" onclick="loadQuestion()">Start Quiz ⚡</button>
+            </div>
+
+            <div id="questionArea" style="display:none">
+              <div class="q-meta">📚 <span id="qSubject"></span></div>
+              <div class="q-text" id="qText"></div>
+              <div class="q-options" id="qOptions"></div>
+              <div id="answerFeedback" style="display:none"></div>
+              <div class="quiz-actions" id="quizActions" style="display:none">
+                <button class="btn-primary" onclick="loadQuestion()">Next Question →</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT: Leaderboard + Subject Stats -->
+        <div style="display:flex;flex-direction:column;gap:1rem">
+
+          <div class="card">
+            <div class="card-header">
+              <h3>🏆 Leaderboard</h3>
+              <button class="btn-sm" onclick="loadLeaderboard()">↻ Refresh</button>
+            </div>
+            <div class="card-body" style="max-height:300px;overflow-y:auto">
+              <div id="leaderboardBody"><div class="loading-state">Loading…</div></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h3>📊 Subject Accuracy</h3></div>
+            <div class="card-body">
+              <div class="subject-stats-grid" id="subjectStatsGrid">
+                <div class="loading-state">Loading…</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Badges -->
+      <div class="card">
+        <div class="card-header"><h3>🏅 My Badges</h3></div>
+        <div class="card-body">
+          <div id="badgesSection"><div class="loading-state">Loading…</div></div>
+          <div style="margin-top:1rem;font-size:.82rem;color:var(--muted)">
+            <strong style="color:var(--text2)">How to earn:</strong>
+            🎯 10 correct → Getting Started &nbsp;|&nbsp;
+            🥈 25 correct → Silver Scholar &nbsp;|&nbsp;
+            🥇 50 correct → Gold Master &nbsp;|&nbsp;
+            🔥 5-streak → On Fire! &nbsp;|&nbsp;
+            ⚡ 10-streak → Unstoppable
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Badge Popup -->
+<div class="badge-popup" id="badgePopup" style="display:none">
+  <div class="bp-icon" id="bpIcon">🏅</div>
+  <div class="bp-title" id="bpTitle">Badge Earned!</div>
+  <div class="bp-sub" id="bpSub">Congratulations!</div>
+</div>
+
+<script>
+let currentQuestion = null;
+let answered = false;
+let selectedSubject = '';
+let stats = {};
+
+const BADGE_INFO = {
+  'first_10':  { icon:'🎯', name:'Getting Started',  desc:'Answered 10 correctly' },
+  'silver_25': { icon:'🥈', name:'Silver Scholar',   desc:'Answered 25 correctly' },
+  'gold_50':   { icon:'🥇', name:'Gold Master',      desc:'Answered 50 correctly' },
+  'streak_5':  { icon:'🔥', name:'On Fire!',         desc:'5-question streak' },
+  'streak_10': { icon:'⚡', name:'Unstoppable',      desc:'10-question streak' },
+};
+
+async function loadStats() {
+  try {
+    const res = await fetch('/api/student/quiz/stats');
+    stats = await res.json();
+    updateHUD();
+    renderSubjectStats();
+    renderBadges();
+    loadLeaderboard();
+    buildSubjectBar();
+  } catch(e) {
+    console.error('Failed to load stats', e);
+  }
+}
+
+function updateHUD() {
+  const xp      = stats.xp || 0;
+  const streak  = stats.streak || 0;
+  const correct = stats.total_correct || 0;
+  const total   = stats.total_answered || 0;
+  const acc     = total > 0 ? Math.round(correct / total * 100) : 0;
+  const level   = stats.level || 1;
+
+  document.getElementById('hudXP').textContent      = xp;
+  document.getElementById('hudStreak').textContent  = streak;
+  document.getElementById('hudCorrect').textContent = correct;
+  document.getElementById('hudAcc').textContent     = total > 0 ? acc + '%' : '--';
+  document.getElementById('hXP').textContent        = xp + ' XP';
+  document.getElementById('levelNum').textContent   = level;
+  document.getElementById('levelLabel').textContent = level;
+
+  const xpInLevel = xp % 200;
+  document.getElementById('levelFill').style.width  = (xpInLevel / 200 * 100) + '%';
+  document.getElementById('xpToNext').textContent   = (200 - xpInLevel) + ' XP to next level';
+  document.getElementById('rankDisplay').textContent = '#' + (stats.leaderboard_rank || '--');
+
+  const banner = document.getElementById('streakBanner');
+  if (streak >= 3) {
+    banner.classList.add('show');
+    document.getElementById('streakNum').textContent = streak;
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
+function buildSubjectBar() {
+  const subs = stats.available_subjects || [];
+  const bar  = document.getElementById('subjectBar');
+  bar.innerHTML =
+    '<div class="sub-chip ' + (selectedSubject === '' ? 'active' : '') + '" onclick="selectSub(\'\')">🎲 Mixed</div>' +
+    subs.map(function(s) {
+      return '<div class="sub-chip ' + (selectedSubject === s ? 'active' : '') + '" onclick="selectSub(\'' + s + '\')">' + s + '</div>';
+    }).join('');
+}
+
+function selectSub(sub) {
+  selectedSubject = sub;
+  buildSubjectBar();
+}
+
+async function loadQuestion() {
+  answered = false;
+  document.getElementById('startPlaceholder').style.display = 'none';
+  document.getElementById('questionArea').style.display     = '';
+  document.getElementById('answerFeedback').style.display   = 'none';
+  document.getElementById('quizActions').style.display      = 'none';
+  document.getElementById('qText').textContent              = 'Loading…';
+  document.getElementById('qOptions').innerHTML             = '';
+
+  var url = '/api/student/quiz/question';
+  if (selectedSubject) url += '?subject=' + encodeURIComponent(selectedSubject);
+  const res = await fetch(url);
+  currentQuestion = await res.json();
+
+  document.getElementById('qSubject').textContent = currentQuestion.subject || 'Mixed';
+  document.getElementById('qText').textContent    = currentQuestion.question;
+
+  var letters = ['A','B','C','D'];
+  document.getElementById('qOptions').innerHTML = currentQuestion.options.map(function(opt, i) {
+    return '<div class="q-opt" id="opt_' + i + '" onclick="selectAnswer(' + i + ')">' +
+           '<div class="opt-letter">' + letters[i] + '</div>' +
+           '<span>' + opt + '</span>' +
+           '</div>';
+  }).join('');
+}
+
+async function selectAnswer(idx) {
+  if (answered) return;
+  answered = true;
+
+  document.querySelectorAll('.q-opt').forEach(function(el) { el.style.pointerEvents = 'none'; });
+  document.getElementById('opt_' + idx).classList.add('selected');
+
+  const res = await fetch('/api/student/quiz/answer', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      question: currentQuestion.question,
+      answer:   idx,
+      subject:  currentQuestion.subject
+    })
+  });
+  const data = await res.json();
+
+  document.getElementById('opt_' + data.correct_answer).classList.add('correct');
+  if (!data.correct) {
+    document.getElementById('opt_' + idx).classList.add('wrong');
+  }
+
+  var streakHtml = '';
+  if (data.streak >= 3) {
+    streakHtml = '<span class="xp-flash" style="color:var(--orange);background:rgba(249,115,22,.12)">🔥 ' + data.streak + ' streak</span>';
+  }
+
+  var fb = document.getElementById('answerFeedback');
+  fb.style.display = '';
+  fb.className = 'answer-feedback ' + (data.correct ? 'correct-fb' : 'wrong-fb');
+  fb.innerHTML =
+    '<div class="fb-header">' +
+      (data.correct ? '✅ Correct!' : '❌ Incorrect') +
+      ' <span class="xp-flash">+' + data.xp_gained + ' XP ✨</span>' +
+      streakHtml +
+    '</div>' +
+    '<div class="fb-exp">' + (data.explanation || '') + '</div>';
+
+  document.getElementById('quizActions').style.display = '';
+
+  stats.xp             = data.total_xp;
+  stats.streak         = data.streak;
+  stats.level          = data.level;
+  stats.total_correct  = (stats.total_correct  || 0) + (data.correct ? 1 : 0);
+  stats.total_answered = (stats.total_answered || 0) + 1;
+  updateHUD();
+
+  if (data.badges_earned && data.badges_earned.length > 0) {
+    showBadge(data.badges_earned[0]);
+    var sr = await fetch('/api/student/quiz/stats');
+    stats = await sr.json();
+    renderBadges();
+    updateHUD();
+  }
+}
+
+function showBadge(badge) {
+  var popup = document.getElementById('badgePopup');
+  document.getElementById('bpIcon').textContent  = badge.icon;
+  document.getElementById('bpTitle').textContent = badge.name;
+  document.getElementById('bpSub').textContent   = '🎉 Badge unlocked!';
+  popup.style.display = '';
+  popup.classList.add('show');
+  setTimeout(function() {
+    popup.classList.remove('show');
+    setTimeout(function() { popup.style.display = 'none'; }, 400);
+  }, 3500);
+}
+
+async function loadLeaderboard() {
+  const res   = await fetch('/api/student/leaderboard');
+  const board = await res.json();
+  var el = document.getElementById('leaderboardBody');
+
+  if (!board.length) {
+    el.innerHTML = '<div class="empty-state">No data yet</div>';
+    return;
+  }
+
+  el.innerHTML = board.slice(0, 10).map(function(p, i) {
+    var medal   = i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : (i+1);
+    var rankCls = i===0 ? 'gold' : i===1 ? 'silver' : i===2 ? 'bronze' : '';
+    var xpPct   = (p.xp % 200) / 200 * 100;
+    var initials = (p.avatar || p.name.slice(0,2)).toUpperCase();
+    return '<div class="lb-row">' +
+      '<div class="lb-rank ' + rankCls + '">' + medal + '</div>' +
+      '<div class="lb-avatar">' + initials + '</div>' +
+      '<div style="flex:1">' +
+        '<div class="lb-name">' + p.name + '</div>' +
+        '<div class="xp-bar"><div class="xp-fill" style="width:' + xpPct + '%"></div></div>' +
+      '</div>' +
+      '<div style="text-align:right">' +
+        '<div class="lb-xp">' + p.xp + ' XP</div>' +
+        '<div class="lb-level">Lv.' + p.level + ' · ' + p.streak + '🔥</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderSubjectStats() {
+  var el      = document.getElementById('subjectStatsGrid');
+  var subStats = stats.subject_stats || {};
+  var entries  = Object.entries(subStats);
+
+  if (!entries.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:.85rem;grid-column:1/-1">No attempts yet — start the quiz!</div>';
+    return;
+  }
+
+  el.innerHTML = entries.map(function(entry) {
+    var sub = entry[0], d = entry[1];
+    var acc = d.answered > 0 ? Math.round(d.correct / d.answered * 100) : 0;
+    return '<div class="sub-stat-card">' +
+      '<div class="ssc-name">' + sub + '</div>' +
+      '<div class="ssc-acc">' + acc + '%</div>' +
+      '<div class="ssc-sub">' + d.correct + '/' + d.answered + ' correct</div>' +
+      '<div class="ssc-bar"><div class="ssc-fill" style="width:' + acc + '%"></div></div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderBadges() {
+  var el     = document.getElementById('badgesSection');
+  var earned = stats.badges || [];
+
+  if (!earned.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:.85rem">No badges yet — keep answering!</div>';
+    return;
+  }
+
+  el.innerHTML = '<div class="badges-grid">' +
+    earned.map(function(bid) {
+      var b = BADGE_INFO[bid] || { icon:'🏅', name:bid, desc:'' };
+      return '<div class="badge-item" title="' + b.desc + '">' +
+             '<span class="bi">' + b.icon + '</span><span>' + b.name + '</span>' +
+             '</div>';
+    }).join('') +
+  '</div>';
+}
+
+loadStats();
+</script>
+{% endblock %}

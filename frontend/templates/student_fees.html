@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}My Fees – EduPredict{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block body %}
+<div class="app-layout">
+  {% include "student_layout.html" %}
+  <div class="app-main">
+    <header class="app-header">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-title"><h1>Fee Payments</h1><span class="header-sub">Your fee details and transaction history</span></div>
+    </header>
+    <div class="page-body">
+      <div class="kpi-grid" id="feeKpis"></div>
+
+      <div class="card" id="feeStatusCard"></div>
+
+      <div class="card">
+        <div class="card-header"><h3>Transaction History</h3></div>
+        <div class="card-body" id="txnList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+async function loadFees() {
+  const fees = await fetch('/api/student/fees').then(r=>r.json());
+  const pct = fees.total_due > 0 ? (fees.paid/fees.total_due*100).toFixed(0) : 0;
+  const statusColor = {Paid:'badge-green',Partial:'badge-orange',Unpaid:'badge-red'}[fees.status]||'badge-orange';
+
+  document.getElementById('feeKpis').innerHTML = `
+    <div class="kpi-card kpi-blue"><div class="kpi-icon">💰</div><div class="kpi-content"><div class="kpi-val">₹${fees.total_due.toLocaleString()}</div><div class="kpi-label">Total Fee</div></div></div>
+    <div class="kpi-card kpi-green"><div class="kpi-icon">✅</div><div class="kpi-content"><div class="kpi-val">₹${fees.paid.toLocaleString()}</div><div class="kpi-label">Amount Paid</div></div></div>
+    <div class="kpi-card kpi-${fees.balance>0?'red':'green'}"><div class="kpi-icon">⏳</div><div class="kpi-content"><div class="kpi-val">₹${fees.balance.toLocaleString()}</div><div class="kpi-label">Balance Due</div></div></div>
+    <div class="kpi-card kpi-purple"><div class="kpi-icon">📊</div><div class="kpi-content"><div class="kpi-val">${pct}%</div><div class="kpi-label">Paid</div></div></div>
+  `;
+
+  document.getElementById('feeStatusCard').innerHTML = `
+    <div class="card-header"><h3>Payment Status</h3><span class="badge ${statusColor}">${fees.status}</span></div>
+    <div class="card-body">
+      <div class="fee-progress-wrap">
+        <div class="fee-progress-bar">
+          <div class="fee-progress-fill" style="width:${pct}%;background:${fees.status==='Paid'?'#22c55e':fees.status==='Partial'?'#f59e0b':'#ef4444'}"></div>
+        </div>
+        <div class="fee-progress-labels">
+          <span>₹0</span><span style="color:#22c55e">Paid: ₹${fees.paid.toLocaleString()}</span><span>₹${fees.total_due.toLocaleString()}</span>
+        </div>
+      </div>
+      ${fees.balance > 0 ? `<div class="fee-notice">⚠️ Balance due: ₹${fees.balance.toLocaleString()}. Please contact admin to make payment.</div>` : '<div class="fee-notice fee-notice-ok">✅ All fees are paid. Thank you!</div>'}
+    </div>
+  `;
+
+  document.getElementById('txnList').innerHTML = (fees.transactions||[]).length ?
+    `<div class="table-wrap"><table class="data-table">
+      <thead><tr><th>Receipt No.</th><th>Amount</th><th>Date</th><th>Mode</th><th>Status</th></tr></thead>
+      <tbody>${fees.transactions.map(t=>`
+        <tr>
+          <td><code>${t.receipt}</code></td>
+          <td class="text-green">₹${t.amount.toLocaleString()}</td>
+          <td>${t.date}</td><td>${t.mode}</td>
+          <td><span class="badge badge-green">${t.status}</span></td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>` :
+    '<div class="empty-state">No transactions yet.</div>';
+}
+loadFees();
+</script>
+{% endblock %}

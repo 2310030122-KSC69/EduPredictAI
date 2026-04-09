@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}My Marks – EduPredict{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block body %}
+<div class="app-layout">
+  {% include "student_layout.html" %}
+  <div class="app-main">
+    <header class="app-header">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-title"><h1>📝 Marks & Grades</h1><span class="header-sub">Your detailed academic performance</span></div>
+    </header>
+    <div class="page-body">
+
+      <div class="kpi-grid" id="marksKpis"></div>
+
+      <!-- Component breakdown -->
+      <div class="marks-legend" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+        <div class="legend-item" style="background:#dbeafe;color:#1e40af;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;">InSem 1 /25</div>
+        <div class="legend-item" style="background:#d1fae5;color:#065f46;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;">InSem Lab /25</div>
+        <div class="legend-item" style="background:#ede9fe;color:#5b21b6;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;">InSem 2 /25</div>
+        <div class="legend-item" style="background:#fef3c7;color:#92400e;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;">End Sem /50</div>
+        <div class="legend-item" style="background:#fee2e2;color:#991b1b;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;">End Lab /25</div>
+        <div class="legend-item" style="background:#f1f5f9;color:#334155;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;">Total /150</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Subject-wise Marks</h3></div>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th rowspan="2">Subject</th>
+                  <th colspan="3" style="background:#3b82f6;color:#fff;">Internal</th>
+                  <th colspan="2" style="background:#f59e0b;color:#fff;">End Exam</th>
+                  <th rowspan="2">Total /150</th>
+                  <th rowspan="2">%</th>
+                  <th rowspan="2">Grade</th>
+                </tr>
+                <tr>
+                  <th style="background:#eff6ff;color:#1e40af;">InSem 1<br>/25</th>
+                  <th style="background:#f0fdf4;color:#065f46;">InSem Lab<br>/25</th>
+                  <th style="background:#f5f3ff;color:#5b21b6;">InSem 2<br>/25</th>
+                  <th style="background:#fffbeb;color:#92400e;">End Sem<br>/50</th>
+                  <th style="background:#fff1f2;color:#991b1b;">End Lab<br>/25</th>
+                </tr>
+              </thead>
+              <tbody id="marksBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Performance Chart</h3></div>
+        <div class="card-body" id="perfChart"></div>
+      </div>
+
+      <!-- Component-wise performance -->
+      <div class="card">
+        <div class="card-header"><h3>Component-wise Analysis</h3></div>
+        <div class="card-body" id="componentChart"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.bar-row   { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.bar-label { width:140px; font-size:13px; font-weight:600; }
+.bar-track { flex:1; height:20px; background:#f1f5f9; border-radius:10px; overflow:hidden; }
+.bar-fill  { height:100%; border-radius:10px; transition:width 0.6s; }
+.bar-val   { width:80px; text-align:right; font-size:13px; font-weight:600; }
+.comp-row  { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+</style>
+
+<script>
+const gradeColors = {O:'badge-green','A+':'badge-green',A:'badge-blue','B+':'badge-blue',B:'badge-orange',C:'badge-orange',F:'badge-red'};
+
+async function loadMarks() {
+  const marks   = await fetch('/api/student/marks').then(r=>r.json());
+  const entries = Object.entries(marks||{});
+
+  const totals = entries.map(([,m])=>m.total);
+  const pcts   = entries.map(([,m])=>m.percentage);
+  const avg    = pcts.length ? (pcts.reduce((a,b)=>a+b,0)/pcts.length).toFixed(1) : 0;
+  const best   = totals.length ? Math.max(...totals) : 0;
+  const topGrd = entries.filter(([,m])=>m.grade==='O'||m.grade==='A+').length;
+
+  document.getElementById('marksKpis').innerHTML = `
+    <div class="kpi-card kpi-blue"><div class="kpi-icon">📊</div><div class="kpi-content"><div class="kpi-val">${avg}%</div><div class="kpi-label">Average %</div></div></div>
+    <div class="kpi-card kpi-green"><div class="kpi-icon">🏆</div><div class="kpi-content"><div class="kpi-val">${best}/150</div><div class="kpi-label">Best Score</div></div></div>
+    <div class="kpi-card kpi-purple"><div class="kpi-icon">⭐</div><div class="kpi-content"><div class="kpi-val">${topGrd}</div><div class="kpi-label">O/A+ Grades</div></div></div>
+    <div class="kpi-card kpi-orange"><div class="kpi-icon">📚</div><div class="kpi-content"><div class="kpi-val">${entries.length}</div><div class="kpi-label">Subjects</div></div></div>`;
+
+  document.getElementById('marksBody').innerHTML = entries.map(([sub,m])=>{
+    const gc = gradeColors[m.grade]||'badge-orange';
+    return `<tr>
+      <td><strong>${sub}</strong></td>
+      <td style="background:#eff6ff;">${m.insem1}/25</td>
+      <td style="background:#f0fdf4;">${m.insem_lab}/25</td>
+      <td style="background:#f5f3ff;">${m.insem2}/25</td>
+      <td style="background:#fffbeb;">${m.end_sem}/50</td>
+      <td style="background:#fff1f2;">${m.end_lab}/25</td>
+      <td><strong>${m.total}/150</strong></td>
+      <td>${m.percentage}%</td>
+      <td><span class="badge ${gc}">${m.grade}</span></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="9" class="loading-row">No marks data available</td></tr>';
+
+  // Overall performance bar
+  document.getElementById('perfChart').innerHTML = entries.map(([sub,m])=>`
+    <div class="bar-row">
+      <span class="bar-label">${sub}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${m.percentage}%;background:${m.percentage>=75?'#22c55e':m.percentage>=50?'#f59e0b':'#ef4444'};"></div></div>
+      <span class="bar-val">${m.percentage}% <span class="badge ${gradeColors[m.grade]||'badge-orange'}" style="font-size:11px;">${m.grade}</span></span>
+    </div>`).join('');
+
+  // Component analysis
+  const compAvg = {insem1:0,insem_lab:0,insem2:0,end_sem:0,end_lab:0};
+  entries.forEach(([,m])=>{ compAvg.insem1+=m.insem1; compAvg.insem_lab+=m.insem_lab; compAvg.insem2+=m.insem2; compAvg.end_sem+=m.end_sem; compAvg.end_lab+=m.end_lab; });
+  const n = entries.length || 1;
+  const comps = [
+    {label:'InSem 1 (avg)',val:(compAvg.insem1/n).toFixed(1),max:25,color:'#3b82f6'},
+    {label:'InSem Lab (avg)',val:(compAvg.insem_lab/n).toFixed(1),max:25,color:'#22c55e'},
+    {label:'InSem 2 (avg)',val:(compAvg.insem2/n).toFixed(1),max:25,color:'#8b5cf6'},
+    {label:'End Sem (avg)',val:(compAvg.end_sem/n).toFixed(1),max:50,color:'#f59e0b'},
+    {label:'End Lab (avg)',val:(compAvg.end_lab/n).toFixed(1),max:25,color:'#ef4444'},
+  ];
+  document.getElementById('componentChart').innerHTML = comps.map(c=>`
+    <div class="bar-row">
+      <span class="bar-label">${c.label}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(c.val/c.max*100).toFixed(0)}%;background:${c.color};"></div></div>
+      <span class="bar-val">${c.val}/${c.max}</span>
+    </div>`).join('');
+}
+
+loadMarks();
+</script>
+{% endblock %}

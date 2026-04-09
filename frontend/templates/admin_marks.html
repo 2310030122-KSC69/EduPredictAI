@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+{% block title %}Marks & Grades – EduPredict{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block body %}
+<div class="app-layout">
+  {% include "admin_layout.html" %}
+  <div class="app-main">
+    <header class="app-header">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-title"><h1>Marks & Grades</h1><span class="header-sub">Manage InSem, EndSem and Lab marks</span></div>
+    </header>
+    <div class="page-body">
+
+      <!-- Component Legend -->
+      <div class="marks-legend">
+        <div class="legend-item legend-insem1">InSem 1 <span>/25</span></div>
+        <div class="legend-item legend-insem-lab">InSem Lab <span>/25</span></div>
+        <div class="legend-item legend-insem2">InSem 2 <span>/25</span></div>
+        <div class="legend-item legend-endsem">End Sem <span>/50</span></div>
+        <div class="legend-item legend-endlab">End Lab <span>/25</span></div>
+        <div class="legend-item legend-total">Total <span>/150</span></div>
+      </div>
+
+      <div class="toolbar">
+        <input class="search-input" id="searchInput" placeholder="Search student or subject..." oninput="renderMarks()"/>
+        <select class="filter-select" id="filterSubject" onchange="renderMarks()"><option value="">All Subjects</option></select>
+        <select class="filter-select" id="filterGrade" onchange="renderMarks()">
+          <option value="">All Grades</option>
+          <option>O</option><option>A+</option><option>A</option><option>B+</option><option>B</option><option>C</option><option>F</option>
+        </select>
+        <button class="btn-primary" onclick="exportCSV()">⬇ Export CSV</button>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div class="table-wrap">
+            <table class="data-table marks-table">
+              <thead>
+                <tr>
+                  <th rowspan="2">Student</th>
+                  <th rowspan="2">Subject</th>
+                  <th colspan="3" class="th-internal">Internal Assessment</th>
+                  <th colspan="2" class="th-external">End Examination</th>
+                  <th rowspan="2">Total<br>/150</th>
+                  <th rowspan="2">%</th>
+                  <th rowspan="2">Grade</th>
+                  <th rowspan="2">Action</th>
+                </tr>
+                <tr>
+                  <th class="th-sub insem1-col">InSem 1<br>/25</th>
+                  <th class="th-sub insem-lab-col">InSem Lab<br>/25</th>
+                  <th class="th-sub insem2-col">InSem 2<br>/25</th>
+                  <th class="th-sub endsem-col">End Sem<br>/50</th>
+                  <th class="th-sub endlab-col">End Lab<br>/25</th>
+                </tr>
+              </thead>
+              <tbody id="marksBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grade Distribution card -->
+      <div class="card">
+        <div class="card-header"><h3>Grade Distribution</h3></div>
+        <div class="card-body" id="gradeDist"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Marks Modal -->
+<div class="modal-overlay" id="marksModal">
+  <div class="modal modal-lg">
+    <div class="modal-header"><h3>✏️ Update Marks</h3><button onclick="closeModal('marksModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="modal-info" id="marksInfo"></div>
+      <input type="hidden" id="m_sid"/><input type="hidden" id="m_sub"/>
+      <div class="marks-component-grid">
+        <div class="marks-component insem1-bg">
+          <div class="mc-label">📘 InSem 1</div>
+          <input id="m_insem1" type="number" min="0" max="25" class="mc-input"/>
+          <div class="mc-max">Max: 25</div>
+        </div>
+        <div class="marks-component insem-lab-bg">
+          <div class="mc-label">🔬 InSem Lab</div>
+          <input id="m_insem_lab" type="number" min="0" max="25" class="mc-input"/>
+          <div class="mc-max">Max: 25</div>
+        </div>
+        <div class="marks-component insem2-bg">
+          <div class="mc-label">📗 InSem 2</div>
+          <input id="m_insem2" type="number" min="0" max="25" class="mc-input"/>
+          <div class="mc-max">Max: 25</div>
+        </div>
+        <div class="marks-component endsem-bg">
+          <div class="mc-label">📋 End Sem</div>
+          <input id="m_end_sem" type="number" min="0" max="50" class="mc-input"/>
+          <div class="mc-max">Max: 50</div>
+        </div>
+        <div class="marks-component endlab-bg">
+          <div class="mc-label">🧪 End Lab</div>
+          <input id="m_end_lab" type="number" min="0" max="25" class="mc-input"/>
+          <div class="mc-max">Max: 25</div>
+        </div>
+      </div>
+      <div class="marks-preview" id="marksPreview"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('marksModal')">Cancel</button>
+      <button class="btn-primary" onclick="saveMarks()">💾 Save Marks</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.marks-legend { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+.legend-item  { padding:6px 14px; border-radius:20px; font-size:13px; font-weight:600; }
+.legend-item span { font-weight:400; opacity:0.8; }
+.legend-insem1    { background:#dbeafe; color:#1e40af; }
+.legend-insem-lab { background:#d1fae5; color:#065f46; }
+.legend-insem2    { background:#ede9fe; color:#5b21b6; }
+.legend-endsem    { background:#fef3c7; color:#92400e; }
+.legend-endlab    { background:#fee2e2; color:#991b1b; }
+.legend-total     { background:#f1f5f9; color:#334155; }
+.marks-table thead tr:first-child th { background:#1e293b; color:#fff; }
+.marks-table .th-internal { background:#3b82f6; color:#fff; }
+.marks-table .th-external { background:#f59e0b; color:#fff; }
+.marks-table .th-sub { font-weight:500; font-size:12px; }
+.insem1-col  { background:#eff6ff; }
+.insem-lab-col { background:#f0fdf4; }
+.insem2-col  { background:#f5f3ff; }
+.endsem-col  { background:#fffbeb; }
+.endlab-col  { background:#fff1f2; }
+.marks-component-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin:16px 0; }
+.marks-component { border-radius:12px; padding:16px; text-align:center; }
+.mc-label { font-weight:600; font-size:13px; margin-bottom:8px; }
+.mc-input { width:100%; text-align:center; font-size:22px; font-weight:700; border:2px solid rgba(0,0,0,0.15); border-radius:8px; padding:8px; background:white; }
+.mc-max   { font-size:11px; margin-top:6px; opacity:0.7; }
+.insem1-bg    { background:#dbeafe; }
+.insem-lab-bg { background:#d1fae5; }
+.insem2-bg    { background:#ede9fe; }
+.endsem-bg    { background:#fef3c7; }
+.endlab-bg    { background:#fee2e2; }
+.marks-preview { background:#f8fafc; border-radius:10px; padding:16px; display:flex; gap:20px; align-items:center; flex-wrap:wrap; }
+.mp-item { text-align:center; }
+.mp-val  { font-size:22px; font-weight:700; color:#1e293b; }
+.mp-lbl  { font-size:11px; color:#64748b; margin-top:2px; }
+.bar-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.bar-label { width:80px; font-size:12px; font-weight:600; }
+.grade-bar { flex:1; height:28px; background:#f1f5f9; border-radius:6px; overflow:hidden; display:flex; }
+.grade-seg { height:100%; display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff; font-weight:600; transition:width 0.5s; }
+@media (max-width:768px) { .marks-component-grid { grid-template-columns:repeat(2,1fr); } }
+</style>
+
+<script>
+const gradeColors = {O:'badge-green','A+':'badge-green',A:'badge-blue','B+':'badge-blue',B:'badge-orange',C:'badge-orange',F:'badge-red'};
+let marksData = {};
+
+async function loadMarks() {
+  marksData = await fetch('/api/admin/marks').then(r=>r.json());
+  populateSubjectFilter();
+  renderMarks();
+  renderGradeDist();
+}
+
+function populateSubjectFilter() {
+  const subs = new Set();
+  Object.values(marksData).forEach(d => Object.keys(d.subjects||{}).forEach(s => subs.add(s)));
+  const sel = document.getElementById('filterSubject');
+  sel.innerHTML = '<option value="">All Subjects</option>' + [...subs].map(s=>`<option>${s}</option>`).join('');
+}
+
+function renderMarks() {
+  const q    = document.getElementById('searchInput').value.toLowerCase();
+  const subF = document.getElementById('filterSubject').value;
+  const grdF = document.getElementById('filterGrade').value;
+  const rows = [];
+  Object.entries(marksData).forEach(([sid,d]) => {
+    if (q && !d.name.toLowerCase().includes(q) && !d.roll_no.toLowerCase().includes(q)) return;
+    const subs = d.subjects || {};
+    const filteredSubs = Object.entries(subs).filter(([sub,m]) => {
+      if (subF && sub !== subF) return false;
+      if (grdF && m.grade !== grdF) return false;
+      return true;
+    });
+    if (!filteredSubs.length) return;
+    filteredSubs.forEach(([sub,m],i) => {
+      const gc = gradeColors[m.grade]||'badge-orange';
+      rows.push(`<tr>
+        ${i===0 ? `<td rowspan="${filteredSubs.length}"><div class="student-cell">
+          <div class="avatar">${d.avatar||d.name.substring(0,2).toUpperCase()}</div>
+          <div><strong>${d.name}</strong><div class="sub-text">${d.roll_no}</div></div></div></td>` : ''}
+        <td><strong>${sub}</strong></td>
+        <td class="insem1-col">${m.insem1}</td>
+        <td class="insem-lab-col">${m.insem_lab}</td>
+        <td class="insem2-col">${m.insem2}</td>
+        <td class="endsem-col">${m.end_sem}</td>
+        <td class="endlab-col">${m.end_lab}</td>
+        <td><strong>${m.total}</strong></td>
+        <td>${m.percentage}%</td>
+        <td><span class="badge ${gc}">${m.grade}</span></td>
+        <td><button class="btn-xs" onclick='openEdit("${sid}","${sub}",${m.insem1},${m.insem_lab},${m.insem2},${m.end_sem},${m.end_lab},"${d.name}")'>Edit</button></td>
+      </tr>`);
+    });
+  });
+  document.getElementById('marksBody').innerHTML = rows.join('') || '<tr><td colspan="11" class="loading-row">No data found</td></tr>';
+}
+
+function renderGradeDist() {
+  const dist = {O:0,'A+':0,A:0,'B+':0,B:0,C:0,F:0};
+  let total  = 0;
+  Object.values(marksData).forEach(d => {
+    Object.values(d.subjects||{}).forEach(m => { dist[m.grade]=(dist[m.grade]||0)+1; total++; });
+  });
+  const colors = {O:'#22c55e','A+':'#16a34a',A:'#3b82f6','B+':'#60a5fa',B:'#f59e0b',C:'#ef4444',F:'#991b1b'};
+  document.getElementById('gradeDist').innerHTML = `
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
+      <div class="bar-row" style="flex:1;min-width:300px;">
+        <div class="grade-bar" style="width:100%;height:40px;border-radius:8px;overflow:hidden;display:flex;">
+          ${Object.entries(dist).map(([g,c])=>c?`<div class="grade-seg" style="width:${(c/total*100).toFixed(1)}%;background:${colors[g]};" title="${g}: ${c}">${g}</div>`:'').join('')}
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        ${Object.entries(dist).map(([g,c])=>`
+          <div style="text-align:center;">
+            <div style="width:36px;height:36px;border-radius:50%;background:${colors[g]};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;margin:0 auto;">${g}</div>
+            <div style="font-size:18px;font-weight:700;margin-top:4px;">${c}</div>
+            <div style="font-size:11px;color:#64748b;">${total?((c/total)*100).toFixed(0):0}%</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function openEdit(sid, sub, i1, il, i2, es, el, name) {
+  document.getElementById('m_sid').value = sid;
+  document.getElementById('m_sub').value = sub;
+  document.getElementById('m_insem1').value = i1;
+  document.getElementById('m_insem_lab').value = il;
+  document.getElementById('m_insem2').value = i2;
+  document.getElementById('m_end_sem').value = es;
+  document.getElementById('m_end_lab').value = el;
+  document.getElementById('marksInfo').innerHTML = `<strong>${name}</strong> — ${sub}`;
+  updatePreview();
+  document.getElementById('marksModal').classList.add('active');
+}
+
+function updatePreview() {
+  const i1 = +document.getElementById('m_insem1').value||0;
+  const il = +document.getElementById('m_insem_lab').value||0;
+  const i2 = +document.getElementById('m_insem2').value||0;
+  const es = +document.getElementById('m_end_sem').value||0;
+  const el = +document.getElementById('m_end_lab').value||0;
+  const total = i1+il+i2+es+el;
+  const pct   = ((total/150)*100).toFixed(1);
+  const grade = getGrade(pct);
+  const gc    = gradeColors[grade]||'badge-orange';
+  document.getElementById('marksPreview').innerHTML = `
+    <div class="mp-item"><div class="mp-val">${total}/150</div><div class="mp-lbl">Total Marks</div></div>
+    <div class="mp-item"><div class="mp-val">${pct}%</div><div class="mp-lbl">Percentage</div></div>
+    <div class="mp-item"><div class="mp-val"><span class="badge ${gc}" style="font-size:18px;padding:6px 14px;">${grade}</span></div><div class="mp-lbl">Grade</div></div>
+    <div class="mp-item"><div style="font-size:12px;color:#64748b;line-height:1.6;">
+      InSem: ${i1+il+i2}/75 &nbsp;|&nbsp; EndSem: ${es+el}/75
+    </div></div>`;
+}
+
+['m_insem1','m_insem_lab','m_insem2','m_end_sem','m_end_lab'].forEach(id => {
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById(id)?.addEventListener('input', updatePreview);
+  });
+});
+
+function getGrade(pct) {
+  if (pct>=90) return 'O'; if (pct>=80) return 'A+'; if (pct>=70) return 'A';
+  if (pct>=60) return 'B+'; if (pct>=50) return 'B'; if (pct>=40) return 'C'; return 'F';
+}
+
+async function saveMarks() {
+  const sid  = document.getElementById('m_sid').value;
+  const body = {
+    subject:    document.getElementById('m_sub').value,
+    insem1:     document.getElementById('m_insem1').value,
+    insem_lab:  document.getElementById('m_insem_lab').value,
+    insem2:     document.getElementById('m_insem2').value,
+    end_sem:    document.getElementById('m_end_sem').value,
+    end_lab:    document.getElementById('m_end_lab').value,
+  };
+  await fetch(`/api/admin/marks/${sid}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  closeModal('marksModal'); loadMarks(); showToast('Marks updated successfully!','success');
+}
+
+function exportCSV() {
+  const rows = [['Student','Roll No','Subject','InSem1','InSemLab','InSem2','EndSem','EndLab','Total','%','Grade']];
+  Object.values(marksData).forEach(d => {
+    Object.entries(d.subjects||{}).forEach(([sub,m]) => {
+      rows.push([d.name,d.roll_no,sub,m.insem1,m.insem_lab,m.insem2,m.end_sem,m.end_lab,m.total,m.percentage+'%',m.grade]);
+    });
+  });
+  const csv  = rows.map(r=>r.join(',')).join('\n');
+  const blob = new Blob([csv],{type:'text/csv'});
+  const a    = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='marks_export.csv'; a.click();
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+function showToast(msg, type='success') {
+  const t = document.createElement('div'); t.className=`toast toast-${type}`; t.textContent=msg;
+  document.body.appendChild(t); setTimeout(()=>t.classList.add('show'),10);
+  setTimeout(()=>{t.classList.remove('show'); setTimeout(()=>t.remove(),300)},3000);
+}
+
+// Attach input listeners after load
+window.addEventListener('load', () => {
+  ['m_insem1','m_insem_lab','m_insem2','m_end_sem','m_end_lab'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updatePreview);
+  });
+  loadMarks();
+});
+</script>
+{% endblock %}

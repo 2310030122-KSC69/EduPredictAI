@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Students – EduPredict{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block body %}
+<div class="app-layout">
+  {% include "admin_layout.html" %}
+  <div class="app-main">
+    <header class="app-header">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-title"><h1>Students</h1><span class="header-sub">Manage student records</span></div>
+      <div class="header-right">
+        <button class="btn-primary" onclick="openAddModal()">+ Add Student</button>
+      </div>
+    </header>
+
+    <div class="page-body">
+      <div class="toolbar">
+        <input class="search-input" id="searchInput" placeholder="Search by name or roll number..." oninput="filterStudents()"/>
+        <select class="filter-select" id="courseFilter" onchange="filterStudents()">
+          <option value="">All Courses</option>
+          <option>B.Tech CS</option><option>B.Tech ECE</option><option>B.Tech ME</option>
+        </select>
+        <select class="filter-select" id="feeFilter" onchange="filterStudents()">
+          <option value="">All Fee Status</option>
+          <option>Paid</option><option>Partial</option><option>Unpaid</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Student List <span class="count-badge" id="studentCount">0</span></h3>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Student</th><th>Roll No</th><th>Course</th><th>Semester</th><th>Attendance</th><th>Fee Status</th><th>Actions</th></tr></thead>
+              <tbody id="studentsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Student Modal -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-header"><h3>Add New Student</h3><button onclick="closeModal('addModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Full Name *</label><input id="f_name" placeholder="e.g., Arjun Mehta"/></div>
+        <div class="form-group"><label>Roll Number *</label><input id="f_roll" placeholder="e.g., CS2024001"/></div>
+        <div class="form-group"><label>Email</label><input id="f_email" type="email" placeholder="student@edu.com"/></div>
+        <div class="form-group"><label>Phone</label><input id="f_phone" placeholder="9XXXXXXXXX"/></div>
+        <div class="form-group"><label>Date of Birth</label><input id="f_dob" type="date"/></div>
+        <div class="form-group"><label>Course *</label>
+          <select id="f_course">
+            <option>B.Tech CS</option><option>B.Tech ECE</option><option>B.Tech ME</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Semester</label>
+          <select id="f_sem"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
+        </div>
+        <div class="form-group"><label>Address</label><input id="f_addr" placeholder="City, State"/></div>
+        <div class="form-group"><label>Guardian Name</label><input id="f_guardian" placeholder="Parent/Guardian name"/></div>
+        <div class="form-group"><label>Guardian Phone</label><input id="f_gphone" placeholder="9XXXXXXXXX"/></div>
+      </div>
+      <div class="modal-note">Default password: <code>student123</code></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('addModal')">Cancel</button>
+      <button class="btn-primary" onclick="addStudent()">Add Student</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Student Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-header"><h3>Edit Student</h3><button onclick="closeModal('editModal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="e_id"/>
+      <div class="form-grid">
+        <div class="form-group"><label>Full Name</label><input id="e_name"/></div>
+        <div class="form-group"><label>Phone</label><input id="e_phone"/></div>
+        <div class="form-group"><label>Course</label>
+          <select id="e_course"><option>B.Tech CS</option><option>B.Tech ECE</option><option>B.Tech ME</option></select>
+        </div>
+        <div class="form-group"><label>Semester</label>
+          <select id="e_sem"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
+        </div>
+        <div class="form-group"><label>Address</label><input id="e_addr"/></div>
+        <div class="form-group"><label>Guardian</label><input id="e_guardian"/></div>
+        <div class="form-group"><label>Guardian Phone</label><input id="e_gphone"/></div>
+        <div class="form-group"><label>Date of Birth</label><input id="e_dob" type="date"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('editModal')">Cancel</button>
+      <button class="btn-primary" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let allStudents = [];
+async function loadStudents() {
+  allStudents = await fetch('/api/admin/students').then(r=>r.json());
+  renderStudents(allStudents);
+}
+
+function renderStudents(list) {
+  document.getElementById('studentCount').textContent = list.length;
+  document.getElementById('studentsBody').innerHTML = list.map(s=>`
+    <tr>
+      <td><div class="student-cell"><div class="avatar">${s.avatar||s.name.substring(0,2).toUpperCase()}</div><div><strong>${s.name}</strong><div class="sub-text">${s.email}</div></div></div></td>
+      <td><code>${s.roll_no}</code></td>
+      <td>${s.course}</td>
+      <td>Sem ${s.semester}</td>
+      <td><span class="badge ${s.avg_attendance>=75?'badge-green':'badge-red'}">${s.avg_attendance}%</span></td>
+      <td><span class="badge ${s.fee_status==='Paid'?'badge-green':s.fee_status==='Partial'?'badge-orange':'badge-red'}">${s.fee_status}</span></td>
+      <td class="action-cell">
+        <button class="btn-xs" onclick='openEdit(${JSON.stringify(s)})'>Edit</button>
+        <button class="btn-xs btn-danger" onclick="deleteStudent('${s.id}','${s.name}')">Delete</button>
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="7" class="loading-row">No students found</td></tr>';
+}
+
+function filterStudents() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const course = document.getElementById('courseFilter').value;
+  const fee = document.getElementById('feeFilter').value;
+  const filtered = allStudents.filter(s =>
+    (!q || s.name.toLowerCase().includes(q) || s.roll_no.toLowerCase().includes(q)) &&
+    (!course || s.course === course) &&
+    (!fee || s.fee_status === fee)
+  );
+  renderStudents(filtered);
+}
+
+function openAddModal() { document.getElementById('addModal').classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+async function addStudent() {
+  const name = document.getElementById('f_name').value.trim();
+  if (!name) { alert('Name is required'); return; }
+  const body = {
+    name, roll_no: document.getElementById('f_roll').value,
+    email: document.getElementById('f_email').value,
+    phone: document.getElementById('f_phone').value,
+    dob: document.getElementById('f_dob').value,
+    course: document.getElementById('f_course').value,
+    semester: document.getElementById('f_sem').value,
+    address: document.getElementById('f_addr').value,
+    guardian: document.getElementById('f_guardian').value,
+    guardian_phone: document.getElementById('f_gphone').value,
+  };
+  const res = await fetch('/api/admin/students', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const data = await res.json();
+  if (data.success) { closeModal('addModal'); loadStudents(); showToast('Student added successfully!','success'); }
+  else showToast(data.error||'Error adding student','error');
+}
+
+function openEdit(s) {
+  document.getElementById('e_id').value = s.id;
+  document.getElementById('e_name').value = s.name;
+  document.getElementById('e_phone').value = s.phone||'';
+  document.getElementById('e_course').value = s.course;
+  document.getElementById('e_sem').value = s.semester;
+  document.getElementById('e_addr').value = s.address||'';
+  document.getElementById('e_guardian').value = s.guardian||'';
+  document.getElementById('e_gphone').value = s.guardian_phone||'';
+  document.getElementById('e_dob').value = s.dob||'';
+  document.getElementById('editModal').classList.add('active');
+}
+
+async function saveEdit() {
+  const sid = document.getElementById('e_id').value;
+  const body = {
+    name: document.getElementById('e_name').value,
+    phone: document.getElementById('e_phone').value,
+    course: document.getElementById('e_course').value,
+    semester: document.getElementById('e_sem').value,
+    address: document.getElementById('e_addr').value,
+    guardian: document.getElementById('e_guardian').value,
+    guardian_phone: document.getElementById('e_gphone').value,
+    dob: document.getElementById('e_dob').value,
+  };
+  await fetch(`/api/admin/students/${sid}`, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  closeModal('editModal'); loadStudents(); showToast('Student updated!','success');
+}
+
+async function deleteStudent(sid, name) {
+  if (!confirm(`Delete student "${name}"? This action cannot be undone.`)) return;
+  await fetch(`/api/admin/students/${sid}`, {method:'DELETE'});
+  loadStudents(); showToast('Student deleted','info');
+}
+
+function showToast(msg, type='success') {
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.classList.add('show'),10);
+  setTimeout(()=>{t.classList.remove('show'); setTimeout(()=>t.remove(),300)}, 3000);
+}
+
+loadStudents();
+</script>
+{% endblock %}

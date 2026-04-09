@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Login – EduPredict{% endblock %}
+{% block body_class %}login-page{% endblock %}
+{% block body %}
+<div class="login-wrap">
+  <div class="login-left">
+    <div class="login-brand">
+      <div class="brand-logo">🎓</div>
+      <h1>EduPredict <span>AI</span></h1>
+      <p>Intelligent Student Management & Performance System</p>
+    </div>
+    <div class="login-features">
+      <div class="lf-item"><span class="lf-icon">📊</span><span>Real-time Analytics & Reports</span></div>
+      <div class="lf-item"><span class="lf-icon">🤖</span><span>ML-Powered Grade Predictions</span></div>
+      <div class="lf-item"><span class="lf-icon">👨‍🏫</span><span>Faculty Attendance & Marks Entry</span></div>
+      <div class="lf-item"><span class="lf-icon">⚡</span><span>Gamified Quiz Arena for Students</span></div>
+      <div class="lf-item"><span class="lf-icon">💳</span><span>Fee Management</span></div>
+    </div>
+  </div>
+
+  <div class="login-right">
+    <div class="login-card">
+      <div class="role-tabs">
+        <button class="role-tab active" data-role="admin" onclick="setRole('admin',this)">
+          <span>🛡️</span> Admin
+        </button>
+        <button class="role-tab" data-role="faculty" onclick="setRole('faculty',this)">
+          <span>👨‍🏫</span> Faculty
+        </button>
+        <button class="role-tab" data-role="student" onclick="setRole('student',this)">
+          <span>👤</span> Student
+        </button>
+      </div>
+
+      <h2 id="loginTitle">Admin Login</h2>
+      <p class="login-sub" id="loginSub">Manage users, reports & site settings</p>
+
+      <div id="errorMsg" class="error-msg" style="display:none"></div>
+
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="emailInput" placeholder="admin@edupredict.edu" autocomplete="email"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="pwInput" placeholder="••••••••" autocomplete="current-password"/>
+          <button type="button" class="pw-toggle" onclick="togglePw()">👁</button>
+        </div>
+      </div>
+
+      <button class="btn-login" id="loginBtn" onclick="doLogin()">
+        <span id="loginBtnText">Sign In as Admin</span>
+        <span id="loginSpinner" style="display:none">⏳</span>
+      </button>
+
+      <div class="demo-creds">
+        <div class="demo-label">Demo Credentials</div>
+        <div id="adminCreds" class="demo-row">
+          <span>admin@edupredict.edu</span><span class="sep">/</span><span>admin123</span>
+        </div>
+        <div id="facultyCreds" class="demo-row" style="display:none">
+          <span>anitha@edupredict.edu</span><span class="sep">/</span><span>faculty123</span>
+        </div>
+        <div id="studentCreds" class="demo-row" style="display:none">
+          <span>aisha@student.edu</span><span class="sep">/</span><span>student123</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentRole = 'admin';
+const ROLE_CONFIG = {
+  admin:   {title:'Admin Login',   sub:'Manage users, reports & site settings',      ph:'admin@edupredict.edu',   btn:'Sign In as Admin'},
+  faculty: {title:'Faculty Login', sub:'Mark attendance & enter marks for subjects',  ph:'anitha@edupredict.edu',  btn:'Sign In as Faculty'},
+  student: {title:'Student Login', sub:'View your academic profile & quiz arena',     ph:'aisha@student.edu',      btn:'Sign In as Student'},
+};
+
+function setRole(role, el) {
+  currentRole = role;
+  document.querySelectorAll('.role-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const cfg = ROLE_CONFIG[role];
+  document.getElementById('loginTitle').textContent = cfg.title;
+  document.getElementById('loginSub').textContent = cfg.sub;
+  document.getElementById('loginBtnText').textContent = cfg.btn;
+  document.getElementById('emailInput').placeholder = cfg.ph;
+  document.getElementById('adminCreds').style.display   = role==='admin'   ? 'flex' : 'none';
+  document.getElementById('facultyCreds').style.display = role==='faculty' ? 'flex' : 'none';
+  document.getElementById('studentCreds').style.display = role==='student' ? 'flex' : 'none';
+  document.getElementById('errorMsg').style.display = 'none';
+}
+
+function togglePw() {
+  const i = document.getElementById('pwInput');
+  i.type = i.type === 'password' ? 'text' : 'password';
+}
+
+async function doLogin() {
+  const email = document.getElementById('emailInput').value.trim();
+  const pw = document.getElementById('pwInput').value;
+  if (!email || !pw) { showErr('Please enter email and password.'); return; }
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  document.getElementById('loginBtnText').style.display = 'none';
+  document.getElementById('loginSpinner').style.display = 'inline';
+  try {
+    const res = await fetch('/api/auth/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email, password:pw})
+    });
+    const data = await res.json();
+    if (data.error) { showErr(data.error); return; }
+    if (data.role === 'admin')   window.location.href = '/admin/dashboard';
+    else if (data.role === 'faculty') window.location.href = '/faculty/dashboard';
+    else window.location.href = '/student/dashboard';
+  } catch(e) { showErr('Connection error. Please try again.'); }
+  finally {
+    btn.disabled = false;
+    document.getElementById('loginBtnText').style.display = 'inline';
+    document.getElementById('loginSpinner').style.display = 'none';
+  }
+}
+
+function showErr(msg) {
+  const e = document.getElementById('errorMsg');
+  e.textContent = msg; e.style.display = 'block';
+}
+
+document.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+</script>
+{% endblock %}

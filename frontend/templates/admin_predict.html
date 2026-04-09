@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}ML Predictions – EduPredict{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block body %}
+<div class="app-layout">
+  {% include "admin_layout.html" %}
+  <div class="app-main">
+    <header class="app-header">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-title"><h1>ML Predictions</h1><span class="header-sub">Predict student performance using AI models</span></div>
+    </header>
+    <div class="page-body">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><h3>Prediction Input</h3></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label>Model</label>
+              <select id="modelSelect">
+                <option value="random_forest">Random Forest</option>
+                <option value="gradient_boosting">Gradient Boosting</option>
+                <option value="logistic_regression">Logistic Regression</option>
+                <option value="svm">SVM</option>
+              </select>
+            </div>
+            <div class="slider-group">
+              <label>Study Hours/Day <span id="sv_study">3.5</span>h</label>
+              <input type="range" min="0" max="12" step="0.5" value="3.5" oninput="updateSlider('sv_study',this.value)" id="s_study"/>
+            </div>
+            <div class="slider-group">
+              <label>Attendance Rate <span id="sv_att">75</span>%</label>
+              <input type="range" min="0" max="100" step="1" value="75" oninput="updateSlider('sv_att',this.value)" id="s_att"/>
+            </div>
+            <div class="slider-group">
+              <label>Previous GPA <span id="sv_gpa">3.0</span></label>
+              <input type="range" min="0" max="4" step="0.1" value="3.0" oninput="updateSlider('sv_gpa',this.value)" id="s_gpa"/>
+            </div>
+            <div class="slider-group">
+              <label>Assignments Completed <span id="sv_asgn">75</span>%</label>
+              <input type="range" min="0" max="100" step="1" value="75" oninput="updateSlider('sv_asgn',this.value)" id="s_asgn"/>
+            </div>
+            <div class="slider-group">
+              <label>Sleep Hours <span id="sv_sleep">7</span>h</label>
+              <input type="range" min="4" max="12" step="0.5" value="7" oninput="updateSlider('sv_sleep',this.value)" id="s_sleep"/>
+            </div>
+            <div class="slider-group">
+              <label>Stress Level <span id="sv_stress">5</span>/10</label>
+              <input type="range" min="1" max="10" step="1" value="5" oninput="updateSlider('sv_stress',this.value)" id="s_stress"/>
+            </div>
+            <div class="slider-group">
+              <label>Motivation Score <span id="sv_motiv">7</span>/10</label>
+              <input type="range" min="1" max="10" step="1" value="7" oninput="updateSlider('sv_motiv',this.value)" id="s_motiv"/>
+            </div>
+            <div class="slider-group">
+              <label>Tutoring Sessions/month <span id="sv_tutor">2</span></label>
+              <input type="range" min="0" max="10" step="1" value="2" oninput="updateSlider('sv_tutor',this.value)" id="s_tutor"/>
+            </div>
+            <div class="form-row">
+              <div class="form-group half">
+                <label>Extracurricular</label>
+                <select id="s_extra"><option value="0">No</option><option value="1" selected>Yes</option></select>
+              </div>
+              <div class="form-group half">
+                <label>Part-time Job</label>
+                <select id="s_job"><option value="0" selected>No</option><option value="1">Yes</option></select>
+              </div>
+            </div>
+            <button class="btn-primary btn-full" onclick="predict()">🤖 Predict Performance</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h3>Prediction Result</h3></div>
+          <div class="card-body" id="resultBox">
+            <div class="predict-placeholder">
+              <div class="pp-icon">🎯</div>
+              <p>Fill in the student data and click Predict to see the result.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Model Comparison</h3></div>
+        <div class="card-body" id="metricsBox"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function updateSlider(id, val) { document.getElementById(id).textContent = val; }
+
+async function predict() {
+  const features = {
+    study_hours_per_day: document.getElementById('s_study').value,
+    attendance_rate: document.getElementById('s_att').value,
+    previous_gpa: document.getElementById('s_gpa').value,
+    assignments_completed: document.getElementById('s_asgn').value,
+    sleep_hours: document.getElementById('s_sleep').value,
+    stress_level: document.getElementById('s_stress').value,
+    motivation_score: document.getElementById('s_motiv').value,
+    tutoring_sessions: document.getElementById('s_tutor').value,
+    extracurricular_activities: document.getElementById('s_extra').value,
+    part_time_job: document.getElementById('s_job').value,
+    parental_education: 2, internet_access: 1,
+  };
+  const model = document.getElementById('modelSelect').value;
+  document.getElementById('resultBox').innerHTML = '<div class="loading-state">⏳ Predicting...</div>';
+  const res = await fetch('/api/admin/predict', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model,features})});
+  const data = await res.json();
+  if(data.error) { document.getElementById('resultBox').innerHTML = `<div class="error-state">Error: ${data.error}</div>`; return; }
+  const colors = {Excellent:'#22c55e',Good:'#6366f1',Average:'#f59e0b',Poor:'#ef4444'};
+  const riskColors = {Low:'badge-green',Medium:'badge-orange',High:'badge-red'};
+  document.getElementById('resultBox').innerHTML = `
+    <div class="result-hero" style="border-color:${colors[data.prediction]||'#6366f1'}">
+      <div class="result-label">Predicted Performance</div>
+      <div class="result-val" style="color:${colors[data.prediction]||'#6366f1'}">${data.prediction}</div>
+      <span class="badge ${riskColors[data.risk_level]||'badge-orange'}">Risk: ${data.risk_level}</span>
+    </div>
+    <div class="proba-section">
+      <div class="proba-label">Confidence Distribution</div>
+      ${Object.entries(data.probabilities).map(([cls,p])=>`
+        <div class="bar-row">
+          <span class="bar-label">${cls}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${(p*100).toFixed(0)}%;background:${colors[cls]||'#6366f1'}"></div></div>
+          <span class="bar-val">${(p*100).toFixed(1)}%</span>
+        </div>
+      `).join('')}
+    </div>
+    <div class="tips-section">
+      <div class="tips-label">💡 Recommendations</div>
+      ${data.tips.map(t=>`<div class="tip-item">• ${t}</div>`).join('')}
+    </div>
+  `;
+}
+
+async function loadMetrics() {
+  const metrics = await fetch('/api/admin/model-metrics').then(r=>r.json());
+  const colors = ['#6366f1','#22c55e','#f59e0b','#3b82f6'];
+  if (!metrics.models) return;
+  document.getElementById('metricsBox').innerHTML = `
+    <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Model</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1 Score</th><th>Status</th></tr></thead>
+      <tbody>
+        ${metrics.models.map((m,i)=>`
+          <tr>
+            <td style="font-weight:600;color:${colors[i%4]}">${m.model.replace(/_/g,' ')}</td>
+            <td><span class="badge badge-blue">${m.accuracy}%</span></td>
+            <td>${m.precision}%</td><td>${m.recall}%</td><td>${m.f1_score}%</td>
+            <td>${m.model===metrics.best_model?'<span class="badge badge-green">Best</span>':'<span class="badge">Active</span>'}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    </div>
+  `;
+}
+loadMetrics();
+</script>
+{% endblock %}

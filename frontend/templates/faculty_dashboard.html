@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Faculty Dashboard – EduPredict{% endblock %}
+{% block body_class %}app-page faculty-page{% endblock %}
+{% block body %}
+<div class="app-layout">
+  {% include "faculty_layout.html" %}
+  <div class="app-main">
+    <header class="app-header">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-title">
+        <h1>Faculty Dashboard</h1>
+        <span class="header-sub">{{ user.name if user else 'Faculty' }} — My Subjects</span>
+      </div>
+      <div class="header-right">
+        <div class="header-date" id="headerDate"></div>
+        <div class="header-avatar" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">{{ user.name[:2].upper() if user else 'FC' }}</div>
+      </div>
+    </header>
+
+    <div class="page-body">
+      <!-- KPI Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card kpi-blue">
+          <div class="kpi-icon">👥</div>
+          <div class="kpi-content"><div class="kpi-val" id="kpiStudents">—</div><div class="kpi-label">Total Students</div></div>
+        </div>
+        <div class="kpi-card kpi-purple">
+          <div class="kpi-icon">📚</div>
+          <div class="kpi-content"><div class="kpi-val" id="kpiSubjects">—</div><div class="kpi-label">My Subjects</div></div>
+        </div>
+        <div class="kpi-card kpi-green">
+          <div class="kpi-icon">📅</div>
+          <div class="kpi-content"><div class="kpi-val" id="kpiAtt">—</div><div class="kpi-label">Avg Attendance</div></div>
+        </div>
+        <div class="kpi-card kpi-orange">
+          <div class="kpi-icon">⚠️</div>
+          <div class="kpi-content"><div class="kpi-val" id="kpiLowAtt">—</div><div class="kpi-label">Low Attendance</div></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- My Subjects -->
+        <div class="card">
+          <div class="card-header"><h3>My Subjects</h3><a href="/faculty/marks" class="btn-sm">Enter Marks →</a></div>
+          <div class="card-body" id="mySubjectsBody">
+            <div class="loading-state">Loading subjects…</div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+          <div class="card-header"><h3>Quick Actions</h3></div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:.7rem;">
+              <a href="/faculty/attendance" class="ql-item ql-blue">
+                <span>📅</span><strong>Mark Today's Attendance</strong><small>Bulk mark for your subjects</small>
+              </a>
+              <a href="/faculty/marks" class="ql-item ql-green">
+                <span>📝</span><strong>Enter Marks</strong><small>Update exam scores</small>
+              </a>
+              <a href="/faculty/announcements" class="ql-item ql-purple">
+                <span>📢</span><strong>Post Announcement</strong><small>Notify all students</small>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Students with low attendance -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Students — Attendance Alert <span style="color:var(--red);font-size:.8rem;">Below 75%</span></h3>
+          <a href="/faculty/attendance" class="btn-sm">View All →</a>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Student</th><th>Roll No</th><th>Subject</th><th>Rate</th><th>Status</th></tr></thead>
+              <tbody id="lowAttBody"><tr><td colspan="5" class="loading-row">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+
+async function loadDashboard() {
+  const [statsRes, attRes, profileRes] = await Promise.all([
+    fetch('/api/faculty/stats'),
+    fetch('/api/faculty/attendance'),
+    fetch('/api/faculty/profile')
+  ]);
+  const stats = await statsRes.json();
+  const att = await attRes.json();
+  const profile = await profileRes.json();
+
+  document.getElementById('kpiStudents').textContent = stats.total_students || 0;
+  document.getElementById('kpiSubjects').textContent = stats.my_subjects || 0;
+  document.getElementById('kpiAtt').textContent = (stats.avg_attendance||0) + '%';
+  document.getElementById('kpiLowAtt').textContent = stats.low_attendance_count || 0;
+
+  // My subjects
+  const subs = profile.subjects || [];
+  const subEl = document.getElementById('mySubjectsBody');
+  if (!subs.length) { subEl.innerHTML = '<div class="empty-state">No subjects assigned</div>'; }
+  else {
+    subEl.innerHTML = subs.map(s => `
+      <div style="display:flex;align-items:center;gap:.8rem;padding:.7rem 0;border-bottom:1px solid var(--border)">
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0"></div>
+        <span style="font-weight:600">${s}</span>
+      </div>`).join('');
+  }
+
+  // Low attendance
+  const rows = [];
+  for (const [sid, s] of Object.entries(att)) {
+    for (const [sub, rate] of Object.entries(s.rates || {})) {
+      if (rate < 75) rows.push({name:s.name,roll:s.roll_no,sub,rate});
+    }
+  }
+  const tbody = document.getElementById('lowAttBody');
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">All students above 75% — great job! 🎉</td></tr>'; return; }
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td><div class="student-cell"><div class="avatar">${r.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div><span>${r.name}</span></div></td>
+    <td><code>${r.roll}</code></td>
+    <td>${r.sub}</td>
+    <td><span style="color:var(--red);font-weight:700">${r.rate}%</span></td>
+    <td><span class="badge badge-red">Low</span></td>
+  </tr>`).join('');
+}
+loadDashboard();
+</script>
+{% endblock %}

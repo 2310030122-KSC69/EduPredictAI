@@ -1,0 +1,26 @@
+<!-- faculty_layout.html -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="sb-logo">👨‍🏫</div>
+    <div class="sb-title">EduPredict <span>AI</span></div>
+    <button class="sb-close" onclick="toggleSidebar()">✕</button>
+  </div>
+  <div class="sidebar-user">
+    <div class="su-avatar" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">{{ user.name[:2].upper() if user else 'FC' }}</div>
+    <div class="su-info">
+      <div class="su-name">{{ user.name if user else 'Faculty' }}</div>
+      <div class="su-role" style="color:#a855f7">Faculty Portal</div>
+    </div>
+  </div>
+  <ul class="sidebar-nav">
+    <li class="nav-section">Overview</li>
+    <li><a href="/faculty/dashboard" class="sn-link {% if request.path=='/faculty/dashboard' %}active{% endif %}"><span>📊</span>Dashboard</a></li>
+    <li class="nav-section">Classroom</li>
+    <li><a href="/faculty/attendance" class="sn-link {% if request.path=='/faculty/attendance' %}active{% endif %}"><span>📅</span>Mark Attendance</a></li>
+    <li><a href="/faculty/marks" class="sn-link {% if request.path=='/faculty/marks' %}active{% endif %}"><span>📝</span>Enter Marks</a></li>
+    <li class="nav-section">Communication</li>
+    <li><a href="/faculty/announcements" class="sn-link {% if request.path=='/faculty/announcements' %}active{% endif %}"><span>📢</span>Announcements</a></li>
+    <li class="nav-section">Account</li>
+    <li><a href="/logout" class="sn-link logout"><span>🚪</span>Logout</a></li>
+  </ul>
+</nav>

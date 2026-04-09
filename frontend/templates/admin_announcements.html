@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Announcements – EduPredict{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block body %}
+<div class="app-layout">
+  {% include "admin_layout.html" %}
+  <div class="app-main">
+    <header class="app-header">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-title"><h1>Announcements</h1><span class="header-sub">Broadcast messages to all students</span></div>
+      <div class="header-right"><button class="btn-primary" onclick="openModal()">+ New Announcement</button></div>
+    </header>
+    <div class="page-body">
+      <div class="card">
+        <div class="card-body" id="annList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="annModal">
+  <div class="modal">
+    <div class="modal-header"><h3>New Announcement</h3><button onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Title *</label><input id="a_title" placeholder="e.g. Exam Schedule"/></div>
+      <div class="form-group"><label>Message *</label><textarea id="a_body" rows="4" placeholder="Write your announcement here..."></textarea></div>
+      <div class="form-group"><label>Priority</label>
+        <select id="a_priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="postAnn()">Publish to All Students</button>
+    </div>
+  </div>
+</div>
+
+<script>
+async function loadAnns() {
+  const anns = await fetch('/api/admin/announcements').then(r=>r.json());
+  document.getElementById('annList').innerHTML = (Array.isArray(anns)&&anns.length) ? anns.map(a=>`
+    <div class="ann-card priority-${a.priority}">
+      <div class="ann-header">
+        <div>
+          <span class="ann-priority-badge ${a.priority}">${a.priority.toUpperCase()}</span>
+          <strong class="ann-card-title">${a.title}</strong>
+        </div>
+        <div class="ann-meta">
+          <span>${a.date}</span>
+          <button class="btn-xs btn-danger" onclick="deleteAnn('${a.id}')">Delete</button>
+        </div>
+      </div>
+      <p class="ann-card-body">${a.body}</p>
+      <div class="ann-footer">Posted by ${a.by}</div>
+    </div>
+  `).join('') : '<div class="empty-state">No announcements yet. Create the first one!</div>';
+}
+
+function openModal() { document.getElementById('annModal').classList.add('active'); }
+function closeModal() { document.getElementById('annModal').classList.remove('active'); }
+
+async function postAnn() {
+  const title = document.getElementById('a_title').value.trim();
+  const body  = document.getElementById('a_body').value.trim();
+  if (!title || !body) { alert('Title and message are required.'); return; }
+  const res = await fetch('/api/admin/announcements', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({title, body, priority: document.getElementById('a_priority').value})
+  });
+  const data = await res.json();
+  if (data.success) { closeModal(); loadAnns(); showToast('Announcement published!','success'); }
+}
+
+async function deleteAnn(id) {
+  if(!confirm('Delete this announcement?')) return;
+  await fetch(`/api/admin/announcements/${id}`, {method:'DELETE'});
+  loadAnns(); showToast('Deleted','info');
+}
+
+function showToast(msg, type='success') {
+  const t = document.createElement('div'); t.className=`toast toast-${type}`; t.textContent=msg;
+  document.body.appendChild(t); setTimeout(()=>t.classList.add('show'),10);
+  setTimeout(()=>{t.classList.remove('show'); setTimeout(()=>t.remove(),300)},3000);
+}
+loadAnns();
+</script>
+{% endblock %}

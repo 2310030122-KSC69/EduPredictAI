@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Study Materials – EduPredict{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block body %}
+<div class="app-layout">
+  {% include "student_layout.html" %}
+  <div class="app-main">
+    <header class="app-header">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-title"><h1>📚 Study Materials</h1><span class="header-sub">Resources shared by your faculty</span></div>
+    </header>
+    <div class="page-body">
+      <div class="toolbar">
+        <input class="search-input" id="matSearch" placeholder="Search materials..." oninput="renderMaterials()"/>
+        <select class="filter-select" id="matSubject" onchange="renderMaterials()"><option value="">All Subjects</option></select>
+      </div>
+
+      <div id="materialsList"></div>
+
+      <!-- Feedback Section -->
+      <div class="card" style="margin-top:20px;">
+        <div class="card-header"><h3>💬 Send Feedback</h3></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Subject</label>
+              <input id="fb-subject" class="form-input" placeholder="e.g. Data Structures"/>
+            </div>
+            <div class="form-group">
+              <label>Rating</label>
+              <div id="starRating" style="display:flex;gap:6px;font-size:28px;cursor:pointer;">
+                <span class="star" data-v="1">☆</span>
+                <span class="star" data-v="2">☆</span>
+                <span class="star" data-v="3">☆</span>
+                <span class="star" data-v="4">☆</span>
+                <span class="star" data-v="5">☆</span>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Comment</label>
+            <textarea id="fb-comment" class="form-input" rows="3" placeholder="Share your thoughts or suggestions..."></textarea>
+          </div>
+          <button class="btn-primary" onclick="submitFeedback()">📤 Submit Feedback</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<style>
+.material-card { display:flex; align-items:center; gap:16px; padding:16px; border-radius:10px;
+  border:1px solid #e2e8f0; margin-bottom:12px; background:#fff; transition:box-shadow 0.2s; }
+.material-card:hover { box-shadow:0 4px 12px rgba(0,0,0,0.08); }
+.mat-icon { width:48px; height:48px; border-radius:10px; display:flex; align-items:center;
+  justify-content:center; font-size:22px; flex-shrink:0; }
+.mat-info { flex:1; }
+.mat-title { font-weight:700; font-size:15px; }
+.mat-meta  { font-size:12px; color:#64748b; margin-top:4px; }
+.star.active { color:#f59e0b; }
+</style>
+<script>
+let allMaterials = [], selectedRating = 0;
+
+async function loadMaterials() {
+  allMaterials = await fetch('/api/student/materials').then(r=>r.json());
+  const subs = [...new Set(allMaterials.map(m=>m.subject).filter(Boolean))];
+  const sel  = document.getElementById('matSubject');
+  subs.forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o); });
+  renderMaterials();
+}
+
+function renderMaterials() {
+  const q   = document.getElementById('matSearch').value.toLowerCase();
+  const sub = document.getElementById('matSubject').value;
+  const list= allMaterials.filter(m=>
+    (!q || m.title.toLowerCase().includes(q) || m.subject.toLowerCase().includes(q)) &&
+    (!sub || m.subject===sub));
+  const icons = {PDF:'📄',Video:'🎥',Link:'🔗',Doc:'📝'};
+  const iconBg = {PDF:'#dbeafe',Video:'#d1fae5',Link:'#ede9fe',Doc:'#fef3c7'};
+  document.getElementById('materialsList').innerHTML = list.length
+    ? list.map(m=>`
+      <div class="material-card">
+        <div class="mat-icon" style="background:${iconBg[m.type]||'#f1f5f9'}">${icons[m.type]||'📁'}</div>
+        <div class="mat-info">
+          <div class="mat-title">${m.title}</div>
+          <div class="mat-meta">${m.subject} &nbsp;•&nbsp; ${m.type} &nbsp;•&nbsp; Uploaded by ${m.uploaded_by} &nbsp;•&nbsp; ${m.date}</div>
+          ${m.description?`<div style="font-size:13px;color:#475569;margin-top:4px;">${m.description}</div>`:''}
+        </div>
+        <a href="${m.url}" class="btn-sm" target="_blank">↗ Open</a>
+      </div>`).join('')
+    : '<div style="text-align:center;padding:32px;color:#94a3b8;">No materials found</div>';
+}
+
+// Star rating
+document.querySelectorAll('.star').forEach(star => {
+  star.addEventListener('click', () => {
+    selectedRating = +star.dataset.v;
+    document.querySelectorAll('.star').forEach(s => {
+      s.textContent = +s.dataset.v <= selectedRating ? '★' : '☆';
+      s.classList.toggle('active', +s.dataset.v <= selectedRating);
+    });
+  });
+});
+
+async function submitFeedback() {
+  const body = {
+    subject: document.getElementById('fb-subject').value,
+    rating:  selectedRating || 5,
+    comment: document.getElementById('fb-comment').value,
+  };
+  if (!body.subject || !body.comment) { alert('Please fill in subject and comment.'); return; }
+  await fetch('/api/student/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  document.getElementById('fb-subject').value = '';
+  document.getElementById('fb-comment').value = '';
+  selectedRating = 0;
+  document.querySelectorAll('.star').forEach(s=>{s.textContent='☆';s.classList.remove('active');});
+  showToast('Feedback submitted! Thank you.','success');
+}
+
+function showToast(msg, type='success') {
+  const t = document.createElement('div'); t.className=`toast toast-${type}`; t.textContent=msg;
+  document.body.appendChild(t); setTimeout(()=>t.classList.add('show'),10);
+  setTimeout(()=>{t.classList.remove('show'); setTimeout(()=>t.remove(),300)},3000);
+}
+loadMaterials();
+</script>
+{% endblock %}

@@ -1,0 +1,33 @@
+<!-- admin_layout.html -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="sb-logo">🎓</div>
+    <div class="sb-title">EduPredict <span>AI</span></div>
+    <button class="sb-close" onclick="toggleSidebar()">✕</button>
+  </div>
+  <div class="sidebar-user">
+    <div class="su-avatar">{{ user.name[:2].upper() if user else 'AD' }}</div>
+    <div class="su-info">
+      <div class="su-name">{{ user.name if user else 'Admin' }}</div>
+      <div class="su-role">Administrator</div>
+    </div>
+  </div>
+  <ul class="sidebar-nav">
+    <li class="nav-section">Main</li>
+    <li><a href="/admin/dashboard" class="sn-link {% if request.path=='/admin/dashboard' %}active{% endif %}"><span>📊</span>Dashboard</a></li>
+    <li><a href="/admin/students" class="sn-link {% if request.path=='/admin/students' %}active{% endif %}"><span>👥</span>Students</a></li>
+    <li><a href="/admin/faculty" class="sn-link {% if request.path=='/admin/faculty' %}active{% endif %}"><span>👨‍🏫</span>Faculty</a></li>
+    <li class="nav-section">Academic</li>
+    <li><a href="/admin/attendance" class="sn-link {% if request.path=='/admin/attendance' %}active{% endif %}"><span>📅</span>Attendance</a></li>
+    <li><a href="/admin/marks" class="sn-link {% if request.path=='/admin/marks' %}active{% endif %}"><span>📝</span>Marks & Grades</a></li>
+    <li><a href="/admin/timetable" class="sn-link {% if request.path=='/admin/timetable' %}active{% endif %}"><span>🗓️</span>Timetable</a></li>
+    <li class="nav-section">Reports & Finance</li>
+    <li><a href="/admin/reports" class="sn-link {% if request.path=='/admin/reports' %}active{% endif %}"><span>📈</span>Reports</a></li>
+    <li><a href="/admin/fees" class="sn-link {% if request.path=='/admin/fees' %}active{% endif %}"><span>💳</span>Fee Management</a></li>
+    <li class="nav-section">Tools</li>
+    <li><a href="/admin/predict" class="sn-link {% if request.path=='/admin/predict' %}active{% endif %}"><span>🤖</span>ML Predictions</a></li>
+    <li><a href="/admin/announcements" class="sn-link {% if request.path=='/admin/announcements' %}active{% endif %}"><span>📢</span>Announcements</a></li>
+    <li class="nav-section">Account</li>
+    <li><a href="/logout" class="sn-link logout"><span>🚪</span>Logout</a></li>
+  </ul>
+</nav>

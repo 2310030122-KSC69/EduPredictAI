@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}My Profile – EduPredict{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block body %}
+<div class="app-layout">
+  {% include "student_layout.html" %}
+  <div class="app-main">
+    <header class="app-header">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-title"><h1>My Profile</h1><span class="header-sub">Your personal information</span></div>
+    </header>
+    <div class="page-body">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><h3>Personal Details</h3></div>
+          <div class="card-body" id="profileCard">
+            <div class="loading-state">Loading...</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h3>Edit Contact Info</h3></div>
+          <div class="card-body">
+            <div id="editSuccess" class="success-msg" style="display:none">✅ Profile updated successfully!</div>
+            <div class="form-group"><label>Phone Number</label><input id="e_phone" placeholder="9XXXXXXXXX"/></div>
+            <div class="form-group"><label>Address</label><input id="e_addr" placeholder="City, State"/></div>
+            <div class="form-group"><label>Guardian Name</label><input id="e_guardian" placeholder="Parent/Guardian name"/></div>
+            <div class="form-group"><label>Guardian Phone</label><input id="e_gphone" placeholder="9XXXXXXXXX"/></div>
+            <button class="btn-primary btn-full" onclick="saveProfile()">Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+let profileData = {};
+async function loadProfile() {
+  profileData = await fetch('/api/student/profile').then(r=>r.json());
+  const p = profileData;
+  document.getElementById('profileCard').innerHTML = `
+    <div class="profile-hero">
+      <div class="profile-avatar">${p.avatar||p.name.substring(0,2).toUpperCase()}</div>
+      <div class="profile-name">${p.name}</div>
+      <div class="profile-roll">${p.roll_no}</div>
+      <span class="badge badge-blue">${p.course} — Sem ${p.semester}</span>
+    </div>
+    <div class="profile-details">
+      ${[
+        ['📧 Email', p.email],
+        ['📱 Phone', p.phone||'—'],
+        ['🎂 Date of Birth', p.dob||'—'],
+        ['🏠 Address', p.address||'—'],
+        ['👨‍👩‍👧 Guardian', p.guardian||'—'],
+        ['📞 Guardian Phone', p.guardian_phone||'—'],
+        ['🏫 Admission Year', p.admission_year||'—'],
+      ].map(([l,v])=>`<div class="detail-row"><span class="detail-label">${l}</span><span class="detail-val">${v}</span></div>`).join('')}
+    </div>
+  `;
+  document.getElementById('e_phone').value = p.phone||'';
+  document.getElementById('e_addr').value = p.address||'';
+  document.getElementById('e_guardian').value = p.guardian||'';
+  document.getElementById('e_gphone').value = p.guardian_phone||'';
+}
+
+async function saveProfile() {
+  const body = {
+    phone: document.getElementById('e_phone').value,
+    address: document.getElementById('e_addr').value,
+    guardian: document.getElementById('e_guardian').value,
+    guardian_phone: document.getElementById('e_gphone').value,
+  };
+  const res = await fetch('/api/student/profile', {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const data = await res.json();
+  if(data.success) {
+    const msg = document.getElementById('editSuccess');
+    msg.style.display='block';
+    setTimeout(()=>msg.style.display='none',3000);
+    loadProfile();
+  }
+}
+loadProfile();
+</script>
+{% endblock %}

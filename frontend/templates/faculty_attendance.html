@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Mark Attendance – EduPredict{% endblock %}
+{% block body_class %}app-page faculty-page{% endblock %}
+{% block body %}
+<div class="app-layout">
+  {% include "faculty_layout.html" %}
+  <div class="app-main">
+    <header class="app-header">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-title"><h1>Mark Attendance</h1><span class="header-sub">Bulk mark for your subjects</span></div>
+      <div class="header-right">
+        <input type="date" id="attDate" class="filter-select" style="font-size:.85rem"/>
+      </div>
+    </header>
+
+    <div class="page-body">
+      <!-- Subject Selector -->
+      <div class="card">
+        <div class="card-header"><h3>Select Subject</h3></div>
+        <div class="card-body">
+          <div class="quiz-subject-bar" id="subjectBar">
+            <div class="loading-state">Loading subjects…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bulk Mark Panel -->
+      <div class="card" id="bulkPanel" style="display:none">
+        <div class="card-header">
+          <h3>Students — <span id="selectedSub" style="color:var(--accent2)"></span></h3>
+          <div style="display:flex;gap:.6rem">
+            <button class="btn-secondary btn-sm" onclick="markAll('present')">✅ All Present</button>
+            <button class="btn-secondary btn-sm" onclick="markAll('absent')">❌ All Absent</button>
+            <button class="btn-primary" onclick="submitBulk()">Save Attendance</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="bulk-att-grid" id="bulkGrid"></div>
+        </div>
+      </div>
+
+      <!-- Attendance History -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Attendance Overview</h3>
+          <select id="subFilter" class="filter-select" onchange="renderTable()">
+            <option value="">All Subjects</option>
+          </select>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Student</th><th>Roll No</th><th>Subject</th><th>Present</th><th>Total</th><th>Rate</th><th>Status</th></tr></thead>
+              <tbody id="attBody"><tr><td colspan="7" class="loading-row">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+document.getElementById('attDate').value = new Date().toISOString().split('T')[0];
+
+let allAtt = {}, mySubjects = [], selectedSubject = '', bulkStatus = {};
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.className = `toast toast-${type} show`;
+  t.textContent = msg;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+async function init() {
+  const [attRes, profileRes] = await Promise.all([fetch('/api/faculty/attendance'), fetch('/api/faculty/profile')]);
+  allAtt = await attRes.json();
+  const profile = await profileRes.json();
+  mySubjects = profile.subjects || [];
+
+  // Build subject bar
+  const bar = document.getElementById('subjectBar');
+  bar.innerHTML = mySubjects.map(s => `<div class="sub-chip" onclick="selectSubject('${s}')">${s}</div>`).join('');
+
+  // Populate filter
+  const sf = document.getElementById('subFilter');
+  mySubjects.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sf.appendChild(o); });
+
+  renderTable();
+}
+
+function selectSubject(sub) {
+  selectedSubject = sub;
+  document.querySelectorAll('.sub-chip').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.sub-chip').forEach(c => { if(c.textContent===sub) c.classList.add('active'); });
+  document.getElementById('selectedSub').textContent = sub;
+  document.getElementById('bulkPanel').style.display = '';
+
+  bulkStatus = {};
+  const grid = document.getElementById('bulkGrid');
+  const students = Object.entries(allAtt);
+  if (!students.length) { grid.innerHTML = '<div class="empty-state">No students found</div>'; return; }
+
+  grid.innerHTML = students.map(([sid, s]) => {
+    bulkStatus[sid] = 'present';
+    return `<div class="bat-row" id="batrow_${sid}">
+      <div class="lb-avatar">${s.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
+      <div style="flex:1"><div class="bat-name">${s.name}</div><div class="bat-roll">${s.roll_no}</div></div>
+      <div class="bat-toggle">
+        <button class="bat-btn present" id="btn_p_${sid}" onclick="setStatus('${sid}','present')">✅ Present</button>
+        <button class="bat-btn" id="btn_a_${sid}" onclick="setStatus('${sid}','absent')">❌ Absent</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setStatus(sid, status) {
+  bulkStatus[sid] = status;
+  const pb = document.getElementById(`btn_p_${sid}`), ab = document.getElementById(`btn_a_${sid}`);
+  pb.className = 'bat-btn' + (status==='present' ? ' present' : '');
+  ab.className = 'bat-btn' + (status==='absent'  ? ' absent'  : '');
+}
+
+function markAll(status) {
+  Object.keys(bulkStatus).forEach(sid => setStatus(sid, status));
+}
+
+async function submitBulk() {
+  if (!selectedSubject) return;
+  const date = document.getElementById('attDate').value;
+  const res = await fetch('/api/faculty/attendance/bulk', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({subject:selectedSubject, date, records:bulkStatus})
+  });
+  const d = await res.json();
+  if (d.success) {
+    showToast(`✅ Saved attendance for ${d.updated} students`);
+    init();
+  } else {
+    showToast(d.error || 'Error saving', 'error');
+  }
+}
+
+function renderTable() {
+  const filterSub = document.getElementById('subFilter').value;
+  const rows = [];
+  for (const [sid, s] of Object.entries(allAtt)) {
+    for (const [sub, d] of Object.entries(s.subjects || {})) {
+      if (filterSub && sub !== filterSub) continue;
+      const rate = d.total > 0 ? Math.round(d.present/d.total*100) : 0;
+      rows.push({name:s.name,roll:s.roll_no,sub,present:d.present,total:d.total,rate});
+    }
+  }
+  const tbody = document.getElementById('attBody');
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No data</td></tr>'; return; }
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td><div class="student-cell"><div class="avatar">${r.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div><span>${r.name}</span></div></td>
+    <td><code>${r.roll}</code></td>
+    <td>${r.sub}</td>
+    <td>${r.present}</td>
+    <td>${r.total}</td>
+    <td>
+      <div class="mini-bar-wrap">
+        <div class="mini-bar"><div class="mini-fill ${r.rate>=75?'green':'red'}" style="width:${r.rate}%"></div></div>
+        <span style="font-weight:600;color:${r.rate>=75?'var(--green)':'var(--red)'}">${r.rate}%</span>
+      </div>
+    </td>
+    <td><span class="badge ${r.rate>=75?'badge-green':'badge-red'}">${r.rate>=75?'Safe':'Low'}</span></td>
+  </tr>`).join('');
+}
+
+init();
+</script>
+{% endblock %}

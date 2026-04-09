@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}My Timetable – EduPredict{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block body %}
+<div class="app-layout">
+  {% include "student_layout.html" %}
+  <div class="app-main">
+    <header class="app-header">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-title"><h1>🗓️ My Timetable</h1><span class="header-sub">Your weekly class schedule</span></div>
+    </header>
+    <div class="page-body">
+
+      <!-- Today's classes highlight -->
+      <div class="card" id="todayCard">
+        <div class="card-header"><h3>📌 Today's Classes</h3><span class="badge badge-blue" id="todayLabel"></span></div>
+        <div class="card-body" id="todayClasses"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Weekly Schedule</h3></div>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table class="data-table timetable-grid" id="ttTable">
+              <thead></thead><tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<style>
+.timetable-grid th { text-align:center; }
+.timetable-grid td { text-align:center; padding:10px 8px!important; font-size:13px; }
+.tt-slot  { padding:6px 12px; border-radius:6px; font-weight:600; font-size:12px; display:inline-block; }
+.tt-free  { color:#94a3b8; font-style:italic; }
+.tt-today { background:#dbeafe!important; }
+.today-class { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid #f1f5f9; }
+.tc-time  { font-size:12px; color:#64748b; width:100px; }
+.tc-sub   { font-weight:600; }
+</style>
+<script>
+const colors = ['#dbeafe','#d1fae5','#ede9fe','#fef3c7','#fee2e2','#f0fdf4','#fff7ed'];
+const textColors = ['#1e40af','#065f46','#5b21b6','#92400e','#991b1b','#14532d','#7c2d12'];
+let subjectColorMap = {}, colorIdx = 0;
+const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+async function loadTimetable() {
+  const tt  = await fetch('/api/student/timetable').then(r=>r.json());
+  const days = Object.keys(tt);
+  const slots = days.length ? Object.keys(tt[days[0]]) : [];
+  const todayName = dayNames[new Date().getDay()];
+
+  document.getElementById('todayLabel').textContent = todayName;
+
+  // Build color map
+  days.forEach(d => Object.values(tt[d]).forEach(sub => {
+    if (sub !== 'Free' && !subjectColorMap[sub]) {
+      subjectColorMap[sub] = colorIdx++ % colors.length;
+    }
+  }));
+
+  // Today's classes
+  const todaySched = tt[todayName] || {};
+  const todayHtml  = Object.entries(todaySched).filter(([,s])=>s!=='Free').map(([slot,sub])=>{
+    const ci = subjectColorMap[sub]??0;
+    return `<div class="today-class">
+      <span class="tc-time">🕐 ${slot}</span>
+      <span class="tt-slot" style="background:${colors[ci]};color:${textColors[ci]};">${sub}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('todayClasses').innerHTML = todayHtml || '<div style="color:#94a3b8;padding:16px;text-align:center;">No classes today 🎉</div>';
+
+  // Full timetable
+  document.querySelector('#ttTable thead').innerHTML =
+    `<tr><th>Time / Day</th>${days.map(d=>`<th class="${d===todayName?'tt-today':''}">${d}${d===todayName?' 📌':''}</th>`).join('')}</tr>`;
+  document.querySelector('#ttTable tbody').innerHTML = slots.map(slot=>`
+    <tr>
+      <td><strong style="font-size:12px;">${slot}</strong></td>
+      ${days.map(d=>{
+        const sub = tt[d]?.[slot]||'Free';
+        if (sub==='Free') return `<td class="${d===todayName?'tt-today':''}"><span class="tt-free">Free</span></td>`;
+        const ci = subjectColorMap[sub]??0;
+        return `<td class="${d===todayName?'tt-today':''}"><span class="tt-slot" style="background:${colors[ci]};color:${textColors[ci]};">${sub}</span></td>`;
+      }).join('')}
+    </tr>`).join('');
+}
+loadTimetable();
+</script>
+{% endblock %}

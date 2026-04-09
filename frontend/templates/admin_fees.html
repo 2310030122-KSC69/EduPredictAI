@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Fees – EduPredict{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block body %}
+<div class="app-layout">
+  {% include "admin_layout.html" %}
+  <div class="app-main">
+    <header class="app-header">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-title"><h1>Fee Management</h1><span class="header-sub">Track and record fee payments</span></div>
+    </header>
+    <div class="page-body">
+      <div class="kpi-grid">
+        <div class="kpi-card kpi-green"><div class="kpi-icon">✅</div><div class="kpi-content"><div class="kpi-val" id="kpiPaid">—</div><div class="kpi-label">Total Collected</div></div></div>
+        <div class="kpi-card kpi-orange"><div class="kpi-icon">⏳</div><div class="kpi-content"><div class="kpi-val" id="kpiDue">—</div><div class="kpi-label">Total Pending</div></div></div>
+        <div class="kpi-card kpi-blue"><div class="kpi-icon">👥</div><div class="kpi-content"><div class="kpi-val" id="kpiFullPaid">—</div><div class="kpi-label">Fully Paid</div></div></div>
+        <div class="kpi-card kpi-red"><div class="kpi-icon">🔔</div><div class="kpi-content"><div class="kpi-val" id="kpiUnpaid">—</div><div class="kpi-label">Unpaid</div></div></div>
+      </div>
+
+      <div class="toolbar">
+        <input class="search-input" id="searchInput" placeholder="Search student..." oninput="filterFees()"/>
+        <select class="filter-select" id="statusFilter" onchange="filterFees()">
+          <option value="">All Status</option><option>Paid</option><option>Partial</option><option>Unpaid</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Student</th><th>Course</th><th>Total Due</th><th>Paid</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="feesBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Payment Modal -->
+<div class="modal-overlay" id="payModal">
+  <div class="modal">
+    <div class="modal-header"><h3>Record Payment</h3><button onclick="closeModal('payModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="modal-info" id="payInfo"></div>
+      <input type="hidden" id="p_sid"/>
+      <div class="form-grid">
+        <div class="form-group"><label>Amount (₹)</label><input id="p_amount" type="number" min="1" placeholder="e.g. 42500"/></div>
+        <div class="form-group"><label>Payment Mode</label>
+          <select id="p_mode"><option>Online</option><option>Cash</option><option>Cheque</option><option>DD</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('payModal')">Cancel</button>
+      <button class="btn-primary" onclick="addPayment()">Record Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- Transactions Modal -->
+<div class="modal-overlay" id="txnModal">
+  <div class="modal modal-lg">
+    <div class="modal-header"><h3>Transaction History</h3><button onclick="closeModal('txnModal')">✕</button></div>
+    <div class="modal-body" id="txnBody"></div>
+  </div>
+</div>
+
+<script>
+let feesData = [];
+async function loadFees() {
+  feesData = await fetch('/api/admin/fees').then(r=>r.json());
+  const paid = feesData.reduce((s,f)=>s+f.paid,0);
+  const due  = feesData.reduce((s,f)=>s+f.balance,0);
+  const fullPaid = feesData.filter(f=>f.status==='Paid').length;
+  const unpaid  = feesData.filter(f=>f.status==='Unpaid').length;
+  document.getElementById('kpiPaid').textContent = '₹'+formatNum(paid);
+  document.getElementById('kpiDue').textContent = '₹'+formatNum(due);
+  document.getElementById('kpiFullPaid').textContent = fullPaid;
+  document.getElementById('kpiUnpaid').textContent = unpaid;
+  renderFees(feesData);
+}
+
+function formatNum(n) {
+  if(n>=100000) return (n/100000).toFixed(1)+'L';
+  if(n>=1000) return (n/1000).toFixed(0)+'K';
+  return n;
+}
+
+function renderFees(list) {
+  document.getElementById('feesBody').innerHTML = list.map(f=>`
+    <tr>
+      <td><div class="student-cell"><div class="avatar">${f.avatar||f.name.substring(0,2).toUpperCase()}</div><div><strong>${f.name}</strong><div class="sub-text">${f.roll_no}</div></div></div></td>
+      <td>${f.course}</td>
+      <td>₹${f.total_due.toLocaleString()}</td>
+      <td class="text-green">₹${f.paid.toLocaleString()}</td>
+      <td class="${f.balance>0?'text-red':'text-green'}">₹${f.balance.toLocaleString()}</td>
+      <td><span class="badge ${f.status==='Paid'?'badge-green':f.status==='Partial'?'badge-orange':'badge-red'}">${f.status}</span></td>
+      <td class="action-cell">
+        ${f.balance>0?`<button class="btn-xs btn-present" onclick='openPay("${f.id}","${f.name}",${f.balance})'>+ Pay</button>`:''}
+        <button class="btn-xs" onclick='openTxn(${JSON.stringify(f.transactions||[])})'>History</button>
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="7" class="loading-row">No data</td></tr>';
+}
+
+function filterFees() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const s = document.getElementById('statusFilter').value;
+  renderFees(feesData.filter(f =>
+    (!q || f.name.toLowerCase().includes(q) || f.roll_no.toLowerCase().includes(q)) &&
+    (!s || f.status === s)
+  ));
+}
+
+function openPay(sid, name, balance) {
+  document.getElementById('p_sid').value = sid;
+  document.getElementById('p_amount').value = balance;
+  document.getElementById('payInfo').innerHTML = `Recording payment for <strong>${name}</strong> — Balance: ₹${balance.toLocaleString()}`;
+  document.getElementById('payModal').classList.add('active');
+}
+
+async function addPayment() {
+  const sid = document.getElementById('p_sid').value;
+  const body = { amount: document.getElementById('p_amount').value, mode: document.getElementById('p_mode').value };
+  const res = await fetch(`/api/admin/fees/${sid}`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const data = await res.json();
+  if (data.success) { closeModal('payModal'); loadFees(); showToast(`Payment recorded! Receipt: ${data.receipt}`,'success'); }
+}
+
+function openTxn(txns) {
+  document.getElementById('txnBody').innerHTML = txns.length ?
+    `<table class="data-table"><thead><tr><th>Receipt</th><th>Amount</th><th>Date</th><th>Mode</th><th>Status</th></tr></thead><tbody>
+      ${txns.map(t=>`<tr><td><code>${t.receipt}</code></td><td>₹${t.amount.toLocaleString()}</td><td>${t.date}</td><td>${t.mode}</td><td><span class="badge badge-green">${t.status}</span></td></tr>`).join('')}
+    </tbody></table>` :
+    '<div class="empty-state">No transactions yet.</div>';
+  document.getElementById('txnModal').classList.add('active');
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+function showToast(msg, type='success') {
+  const t = document.createElement('div'); t.className=`toast toast-${type}`; t.textContent=msg;
+  document.body.appendChild(t); setTimeout(()=>t.classList.add('show'),10);
+  setTimeout(()=>{t.classList.remove('show'); setTimeout(()=>t.remove(),300)},3000);
+}
+loadFees();
+</script>
+{% endblock %}

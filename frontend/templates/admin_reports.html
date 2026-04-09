@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+{% block title %}Reports – EduPredict{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block body %}
+<div class="app-layout">
+  {% include "admin_layout.html" %}
+  <div class="app-main">
+    <header class="app-header">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-title"><h1>📈 Reports</h1><span class="header-sub">Day, Week & Month wise attendance and marks reports</span></div>
+    </header>
+    <div class="page-body">
+
+      <!-- Report Type Tabs -->
+      <div class="report-tabs">
+        <button class="rtab active" onclick="switchTab('attendance',this)">📅 Attendance Report</button>
+        <button class="rtab" onclick="switchTab('marks',this)">📝 Marks Report</button>
+        <button class="rtab" onclick="switchTab('summary',this)">📊 Summary Report</button>
+      </div>
+
+      <!-- ─── ATTENDANCE REPORT ─── -->
+      <div id="tab-attendance">
+        <div class="report-controls card">
+          <div class="card-body" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+            <div class="form-group" style="margin:0;">
+              <label>Period</label>
+              <select id="att-period" class="filter-select" onchange="updateDateInput()">
+                <option value="day">Day</option>
+                <option value="week" selected>Week</option>
+                <option value="month">Month</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>Date</label>
+              <input type="date" id="att-date" class="search-input" style="width:160px;" value="">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>Student</label>
+              <select id="att-student" class="filter-select"><option value="">All Students</option></select>
+            </div>
+            <button class="btn-primary" onclick="loadAttReport()">🔍 Generate Report</button>
+            <button class="btn-secondary" onclick="exportAttCSV()">⬇ Export CSV</button>
+          </div>
+        </div>
+
+        <!-- Summary Bar -->
+        <div class="kpi-grid" id="att-kpis" style="margin-bottom:16px;"></div>
+
+        <!-- Low Attendance Alert -->
+        <div id="att-alerts"></div>
+
+        <!-- Table -->
+        <div class="card">
+          <div class="card-header"><h3 id="att-report-title">Attendance Report</h3></div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table class="data-table" id="attReportTable">
+                <thead id="attReportHead"></thead>
+                <tbody id="attReportBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── MARKS REPORT ─── -->
+      <div id="tab-marks" style="display:none;">
+        <div class="report-controls card">
+          <div class="card-body" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+            <div class="form-group" style="margin:0;">
+              <label>Student</label>
+              <select id="mks-student" class="filter-select"><option value="">All Students</option></select>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>Component</label>
+              <select id="mks-component" class="filter-select">
+                <option value="all">All Components</option>
+                <option value="insem1">InSem 1</option>
+                <option value="insem_lab">InSem Lab</option>
+                <option value="insem2">InSem 2</option>
+                <option value="end_sem">End Sem</option>
+                <option value="end_lab">End Lab</option>
+              </select>
+            </div>
+            <button class="btn-primary" onclick="loadMarksReport()">🔍 Generate Report</button>
+            <button class="btn-secondary" onclick="exportMarksCSV()">⬇ Export CSV</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h3>Marks Report – Component Breakdown</h3></div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Student</th><th>Subject</th>
+                    <th class="insem1-col">InSem 1<br>/25</th>
+                    <th class="insem-lab-col">InSem Lab<br>/25</th>
+                    <th class="insem2-col">InSem 2<br>/25</th>
+                    <th class="endsem-col">End Sem<br>/50</th>
+                    <th class="endlab-col">End Lab<br>/25</th>
+                    <th>Total /150</th><th>%</th><th>Grade</th>
+                  </tr>
+                </thead>
+                <tbody id="marksReportBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Component-wise average chart -->
+        <div class="card">
+          <div class="card-header"><h3>Component-wise Average Marks</h3></div>
+          <div class="card-body" id="componentChart"></div>
+        </div>
+      </div>
+
+      <!-- ─── SUMMARY REPORT ─── -->
+      <div id="tab-summary" style="display:none;">
+        <div class="report-controls card">
+          <div class="card-body" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="form-group" style="margin:0;">
+              <label>Period</label>
+              <div style="display:flex;gap:8px;">
+                <button class="period-btn active" onclick="loadSummary('day',this)">Today</button>
+                <button class="period-btn" onclick="loadSummary('week',this)">This Week</button>
+                <button class="period-btn" onclick="loadSummary('month',this)">This Month</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpi-grid" id="summary-kpis"></div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><h3>⚠️ Low Attendance Students</h3></div>
+            <div class="card-body" id="summary-low-att"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>🏆 Top Performers</h3></div>
+            <div class="card-body" id="summary-top"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+.report-tabs { display:flex; gap:8px; margin-bottom:20px; }
+.rtab { padding:10px 20px; border-radius:8px; border:2px solid #e2e8f0; background:#fff;
+  cursor:pointer; font-weight:600; font-size:14px; transition:all 0.2s; }
+.rtab.active { background:#3b82f6; color:#fff; border-color:#3b82f6; }
+.report-controls { margin-bottom:16px; }
+.period-btn { padding:8px 16px; border-radius:8px; border:2px solid #e2e8f0;
+  background:#fff; cursor:pointer; font-weight:600; font-size:13px; transition:all 0.2s; }
+.period-btn.active { background:#3b82f6; color:#fff; border-color:#3b82f6; }
+.att-status-present { color:#16a34a; font-weight:700; }
+.att-status-absent  { color:#dc2626; font-weight:700; }
+.att-status-none    { color:#94a3b8; }
+.insem1-col    { background:#eff6ff!important; }
+.insem-lab-col { background:#f0fdf4!important; }
+.insem2-col    { background:#f5f3ff!important; }
+.endsem-col    { background:#fffbeb!important; }
+.endlab-col    { background:#fff1f2!important; }
+.low-att-alert { background:#fef2f2; border:1px solid #fca5a5; border-radius:10px; padding:12px 16px; margin-bottom:16px; }
+.bar-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.bar-label { width:130px; font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bar-track { flex:1; height:20px; background:#f1f5f9; border-radius:10px; overflow:hidden; }
+.bar-fill  { height:100%; border-radius:10px; transition:width 0.6s; }
+.bar-val   { width:50px; text-align:right; font-size:13px; font-weight:600; }
+</style>
+
+<script>
+let allStudents = [], attReportData = [], marksReportData = [];
+const gradeColors = {O:'badge-green','A+':'badge-green',A:'badge-blue','B+':'badge-blue',B:'badge-orange',C:'badge-orange',F:'badge-red'};
+
+async function init() {
+  allStudents = await fetch('/api/admin/students').then(r=>r.json());
+  const opts  = allStudents.map(s=>`<option value="${s.id}">${s.name} (${s.roll_no})</option>`).join('');
+  document.getElementById('att-student').innerHTML  = '<option value="">All Students</option>' + opts;
+  document.getElementById('mks-student').innerHTML  = '<option value="">All Students</option>' + opts;
+  document.getElementById('att-date').value = new Date().toISOString().split('T')[0];
+  loadSummary('week', document.querySelector('.period-btn'));
+  loadAttReport();
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('[id^="tab-"]').forEach(el=>el.style.display='none');
+  document.getElementById('tab-'+tab).style.display='';
+  document.querySelectorAll('.rtab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function updateDateInput() {
+  // just keep current value
+}
+
+async function loadAttReport() {
+  const period  = document.getElementById('att-period').value;
+  const dateVal = document.getElementById('att-date').value || new Date().toISOString().split('T')[0];
+  const sid     = document.getElementById('att-student').value;
+  const url     = `/api/admin/reports/attendance?period=${period}&date=${dateVal}&sid=${sid}`;
+  const data    = await fetch(url).then(r=>r.json());
+  attReportData = data;
+  renderAttReport(data);
+}
+
+function renderAttReport(data) {
+  const periodLabel = {day:'Day',week:'Week',month:'Month'}[data.period]||'';
+  document.getElementById('att-report-title').textContent = `Attendance Report – ${periodLabel}`;
+
+  // KPIs
+  let totalP=0, totalA=0, below75=0;
+  data.report.forEach(st => {
+    Object.values(st.subjects).forEach(s => {
+      totalP += s.present; totalA += s.total - s.present;
+      if (s.rate !== null && s.rate < 75) below75++;
+    });
+  });
+  const totalSess = totalP + totalA;
+  document.getElementById('att-kpis').innerHTML = `
+    <div class="kpi-card kpi-green"><div class="kpi-icon">✅</div><div class="kpi-content"><div class="kpi-val">${totalP}</div><div class="kpi-label">Present Count</div></div></div>
+    <div class="kpi-card kpi-red" style="--kpi-color:#ef4444"><div class="kpi-icon">❌</div><div class="kpi-content"><div class="kpi-val">${totalA}</div><div class="kpi-label">Absent Count</div></div></div>
+    <div class="kpi-card kpi-blue"><div class="kpi-icon">📊</div><div class="kpi-content"><div class="kpi-val">${totalSess>0?((totalP/totalSess)*100).toFixed(1):0}%</div><div class="kpi-label">Attendance Rate</div></div></div>
+    <div class="kpi-card kpi-orange"><div class="kpi-icon">⚠️</div><div class="kpi-content"><div class="kpi-val">${below75}</div><div class="kpi-label">Below 75%</div></div></div>`;
+
+  // Alerts
+  const lowList = data.report.filter(st => Object.values(st.subjects).some(s=>s.rate!==null&&s.rate<75));
+  document.getElementById('att-alerts').innerHTML = lowList.length ? `
+    <div class="low-att-alert">⚠️ <strong>${lowList.length} student(s)</strong> have subjects below 75% attendance: ${lowList.map(s=>s.name).join(', ')}</div>` : '';
+
+  // Table: show dates as columns if period=day, else show totals
+  const allSubs = new Set();
+  data.report.forEach(st => Object.keys(st.subjects).forEach(s => allSubs.add(s)));
+  const subs = [...allSubs];
+
+  if (data.period === 'day') {
+    document.getElementById('attReportHead').innerHTML = `<tr><th>Student</th>${subs.map(s=>`<th>${s}</th>`).join('')}<th>Overall</th></tr>`;
+    document.getElementById('attReportBody').innerHTML = data.report.map(st => {
+      const cells = subs.map(sub => {
+        const d = st.subjects[sub];
+        if (!d || d.total === 0) return '<td class="att-status-none">—</td>';
+        const rec = d.records[0];
+        return `<td class="${rec?.status==='present'?'att-status-present':'att-status-absent'}">${rec?.status==='present'?'✓':'✗'}</td>`;
+      }).join('');
+      const rates = Object.values(st.subjects).filter(s=>s.rate!==null).map(s=>s.rate);
+      const overall = rates.length ? (rates.reduce((a,b)=>a+b,0)/rates.length).toFixed(1)+'%' : '—';
+      return `<tr><td><div class="student-cell"><div class="avatar">${st.avatar||st.name.substring(0,2).toUpperCase()}</div><div><strong>${st.name}</strong><div class="sub-text">${st.roll_no}</div></div></div></td>${cells}<td><strong>${overall}</strong></td></tr>`;
+    }).join('') || '<tr><td colspan="20" class="loading-row">No data</td></tr>';
+  } else {
+    document.getElementById('attReportHead').innerHTML = `<tr><th>Student</th>${subs.map(s=>`<th>${s}<br><small>P/T</small></th>`).join('')}<th>Overall %</th></tr>`;
+    document.getElementById('attReportBody').innerHTML = data.report.map(st => {
+      const cells = subs.map(sub => {
+        const d = st.subjects[sub];
+        if (!d) return '<td>—</td>';
+        const pct = d.rate !== null ? d.rate : (d.total>0?((d.present/d.total)*100).toFixed(1):'—');
+        const cls = pct < 75 ? 'att-status-absent' : 'att-status-present';
+        return `<td class="${cls}">${d.present}/${d.total}<br><small>${pct}%</small></td>`;
+      }).join('');
+      const rates = Object.values(st.subjects).filter(s=>s.total>0).map(s=>s.total>0?s.present/s.total*100:0);
+      const overall = rates.length ? (rates.reduce((a,b)=>a+b,0)/rates.length).toFixed(1) : '—';
+      return `<tr><td><div class="student-cell"><div class="avatar">${st.avatar||st.name.substring(0,2).toUpperCase()}</div><div><strong>${st.name}</strong><div class="sub-text">${st.roll_no}</div></div></div></td>${cells}<td><strong>${overall}%</strong></td></tr>`;
+    }).join('') || '<tr><td colspan="20" class="loading-row">No data</td></tr>';
+  }
+}
+
+async function loadMarksReport() {
+  const sid  = document.getElementById('mks-student').value;
+  const comp = document.getElementById('mks-component').value;
+  const data = await fetch(`/api/admin/reports/marks?sid=${sid}&component=${comp}`).then(r=>r.json());
+  marksReportData = data;
+  renderMarksReport(data);
+}
+
+function renderMarksReport(data) {
+  const rows = [];
+  const compTotals = {insem1:0,insem_lab:0,insem2:0,end_sem:0,end_lab:0,count:0};
+  data.report.forEach(st => {
+    const entries = Object.entries(st.subjects||{});
+    entries.forEach(([sub,m],i) => {
+      const gc = gradeColors[m.grade]||'badge-orange';
+      compTotals.insem1   += m.insem1; compTotals.insem_lab += m.insem_lab;
+      compTotals.insem2   += m.insem2; compTotals.end_sem   += m.end_sem;
+      compTotals.end_lab  += m.end_lab; compTotals.count++;
+      rows.push(`<tr>
+        ${i===0?`<td rowspan="${entries.length}"><div class="student-cell">
+          <div class="avatar">${st.avatar||st.name.substring(0,2).toUpperCase()}</div>
+          <div><strong>${st.name}</strong><div class="sub-text">${st.roll_no}</div></div></div></td>`:''}
+        <td><strong>${sub}</strong></td>
+        <td class="insem1-col">${m.insem1}/25</td>
+        <td class="insem-lab-col">${m.insem_lab}/25</td>
+        <td class="insem2-col">${m.insem2}/25</td>
+        <td class="endsem-col">${m.end_sem}/50</td>
+        <td class="endlab-col">${m.end_lab}/25</td>
+        <td><strong>${m.total}/150</strong></td>
+        <td>${m.percentage}%</td>
+        <td><span class="badge ${gc}">${m.grade}</span></td>
+      </tr>`);
+    });
+  });
+  document.getElementById('marksReportBody').innerHTML = rows.join('') || '<tr><td colspan="10" class="loading-row">No data</td></tr>';
+
+  // Component chart
+  const n = compTotals.count || 1;
+  const avgs = [
+    {label:'InSem 1',avg:(compTotals.insem1/n).toFixed(1),max:25,color:'#3b82f6'},
+    {label:'InSem Lab',avg:(compTotals.insem_lab/n).toFixed(1),max:25,color:'#22c55e'},
+    {label:'InSem 2',avg:(compTotals.insem2/n).toFixed(1),max:25,color:'#8b5cf6'},
+    {label:'End Sem',avg:(compTotals.end_sem/n).toFixed(1),max:50,color:'#f59e0b'},
+    {label:'End Lab',avg:(compTotals.end_lab/n).toFixed(1),max:25,color:'#ef4444'},
+  ];
+  document.getElementById('componentChart').innerHTML = avgs.map(a=>`
+    <div class="bar-row">
+      <span class="bar-label">${a.label}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(a.avg/a.max*100).toFixed(0)}%;background:${a.color};"></div></div>
+      <span class="bar-val">${a.avg}/${a.max}</span>
+    </div>`).join('');
+}
+
+async function loadSummary(period, btn) {
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const data = await fetch(`/api/admin/reports/summary?period=${period}`).then(r=>r.json());
+
+  document.getElementById('summary-kpis').innerHTML = `
+    <div class="kpi-card kpi-blue"><div class="kpi-icon">📅</div><div class="kpi-content"><div class="kpi-val" style="font-size:16px;">${data.label}</div><div class="kpi-label">Report Period</div></div></div>
+    <div class="kpi-card kpi-green"><div class="kpi-icon">✅</div><div class="kpi-content"><div class="kpi-val">${data.total_present}</div><div class="kpi-label">Total Present</div></div></div>
+    <div class="kpi-card kpi-orange"><div class="kpi-icon">❌</div><div class="kpi-content"><div class="kpi-val">${data.total_absent}</div><div class="kpi-label">Total Absent</div></div></div>
+    <div class="kpi-card kpi-purple"><div class="kpi-icon">📊</div><div class="kpi-content"><div class="kpi-val">${data.attendance_rate}%</div><div class="kpi-label">Attendance Rate</div></div></div>`;
+
+  document.getElementById('summary-low-att').innerHTML = data.low_attendance_students.length
+    ? data.low_attendance_students.map(s=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;">
+        <div><strong>${s.name}</strong><div class="sub-text">${s.roll_no}</div></div>
+        <span class="badge badge-red">${s.rate}%</span>
+      </div>`).join('')
+    : '<div class="sub-text" style="padding:16px;text-align:center;">No students below 75% 🎉</div>';
+
+  // Top performers from marks
+  const marksAll = await fetch('/api/admin/marks').then(r=>r.json());
+  const tops = Object.entries(marksAll).map(([sid,d]) => {
+    const subs = Object.values(d.subjects||{});
+    const avg  = subs.length ? (subs.reduce((a,s)=>a+s.percentage,0)/subs.length).toFixed(1) : 0;
+    return {name:d.name,roll_no:d.roll_no,avg};
+  }).sort((a,b)=>b.avg-a.avg).slice(0,5);
+
+  document.getElementById('summary-top').innerHTML = tops.map((s,i)=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:${['#f59e0b','#94a3b8','#b45309','#3b82f6','#8b5cf6'][i]};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;">${i+1}</div>
+        <div><strong>${s.name}</strong><div class="sub-text">${s.roll_no}</div></div>
+      </div>
+      <span class="badge badge-green">${s.avg}%</span>
+    </div>`).join('');
+}
+
+function exportAttCSV() {
+  if (!attReportData.report) return;
+  const rows = [['Student','Roll No','Subject','Present','Total','Rate%']];
+  attReportData.report.forEach(st => {
+    Object.entries(st.subjects).forEach(([sub,d]) => {
+      rows.push([st.name,st.roll_no,sub,d.present,d.total,d.rate??'']);
+    });
+  });
+  dlCSV(rows,'attendance_report.csv');
+}
+
+function exportMarksCSV() {
+  if (!marksReportData.report) return;
+  const rows = [['Student','Roll No','Subject','InSem1','InSemLab','InSem2','EndSem','EndLab','Total','%','Grade']];
+  marksReportData.report.forEach(st => {
+    Object.entries(st.subjects||{}).forEach(([sub,m]) => {
+      rows.push([st.name,st.roll_no,sub,m.insem1,m.insem_lab,m.insem2,m.end_sem,m.end_lab,m.total,m.percentage,m.grade]);
+    });
+  });
+  dlCSV(rows,'marks_report.csv');
+}
+
+function dlCSV(rows, name) {
+  const csv  = rows.map(r=>r.join(',')).join('\n');
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = name; a.click();
+}
+
+init();
+</script>
+{% endblock %}

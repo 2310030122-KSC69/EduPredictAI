@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Timetable – EduPredict{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block body %}
+<div class="app-layout">
+  {% include "admin_layout.html" %}
+  <div class="app-main">
+    <header class="app-header">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-title"><h1>🗓️ Timetable Manager</h1><span class="header-sub">View and manage student timetables</span></div>
+    </header>
+    <div class="page-body">
+      <div class="toolbar">
+        <select class="filter-select" id="ttStudent" onchange="loadTimetable()">
+          <option value="">Select Student...</option>
+        </select>
+      </div>
+
+      <div id="ttView" style="display:none;">
+        <div class="card">
+          <div class="card-header"><h3 id="ttTitle">Timetable</h3></div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table class="data-table timetable-grid" id="ttTable">
+                <thead></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="ttEmpty" class="card">
+        <div class="card-body" style="text-align:center;padding:40px;color:#94a3b8;">
+          <div style="font-size:48px;margin-bottom:12px;">🗓️</div>
+          <div style="font-size:16px;">Select a student to view their timetable</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+.timetable-grid th { text-align:center; background:#1e293b; color:#fff; }
+.timetable-grid td { text-align:center; padding:10px 8px!important; font-size:13px; }
+.tt-slot { padding:6px 10px; border-radius:6px; font-weight:600; font-size:12px; }
+.tt-free { color:#94a3b8; font-style:italic; }
+</style>
+<script>
+const colors = ['#dbeafe','#d1fae5','#ede9fe','#fef3c7','#fee2e2','#f0fdf4','#fff7ed'];
+const textColors = ['#1e40af','#065f46','#5b21b6','#92400e','#991b1b','#14532d','#7c2d12'];
+let subjectColorMap = {};
+
+async function init() {
+  const students = await fetch('/api/admin/students').then(r=>r.json());
+  const sel = document.getElementById('ttStudent');
+  students.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id; opt.textContent = `${s.name} (${s.roll_no})`;
+    sel.appendChild(opt);
+  });
+}
+
+async function loadTimetable() {
+  const sid = document.getElementById('ttStudent').value;
+  if (!sid) { document.getElementById('ttView').style.display='none'; document.getElementById('ttEmpty').style.display=''; return; }
+  const tt = await fetch(`/api/admin/timetable/${sid}`).then(r=>r.json());
+  const student = await fetch('/api/admin/students').then(r=>r.json()).then(list=>list.find(s=>s.id===sid));
+  document.getElementById('ttTitle').textContent = `${student.name}'s Timetable`;
+  renderTT(tt);
+  document.getElementById('ttView').style.display='';
+  document.getElementById('ttEmpty').style.display='none';
+}
+
+function renderTT(tt) {
+  const days  = Object.keys(tt);
+  const slots = days.length ? Object.keys(tt[days[0]]) : [];
+  let colorIdx = 0;
+
+  // Build subject color map
+  days.forEach(d => Object.values(tt[d]).forEach(sub => {
+    if (sub !== 'Free' && !subjectColorMap[sub]) {
+      subjectColorMap[sub] = colorIdx++ % colors.length;
+    }
+  }));
+
+  document.querySelector('#ttTable thead').innerHTML =
+    `<tr><th>Time</th>${days.map(d=>`<th>${d}</th>`).join('')}</tr>`;
+  document.querySelector('#ttTable tbody').innerHTML = slots.map(slot=>`
+    <tr>
+      <td><strong style="font-size:12px;">${slot}</strong></td>
+      ${days.map(d => {
+        const sub = tt[d]?.[slot] || 'Free';
+        if (sub === 'Free') return '<td><span class="tt-free">Free</span></td>';
+        const ci = subjectColorMap[sub] ?? 0;
+        return `<td><span class="tt-slot" style="background:${colors[ci]};color:${textColors[ci]};">${sub}</span></td>`;
+      }).join('')}
+    </tr>`).join('');
+}
+
+init();
+</script>
+{% endblock %}

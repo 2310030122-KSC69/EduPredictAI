@@ -1,0 +1,209 @@
+{
+  "feature_cols": [
+    "study_hours_per_day",
+    "attendance_rate",
+    "previous_gpa",
+    "assignments_completed",
+    "sleep_hours",
+    "extracurricular_activities",
+    "parental_education",
+    "internet_access",
+    "tutoring_sessions",
+    "stress_level",
+    "motivation_score",
+    "part_time_job"
+  ],
+  "classes": [
+    "Average",
+    "Excellent",
+    "Good",
+    "Poor"
+  ],
+  "model_results": {
+    "random_forest": {
+      "accuracy": 0.5675,
+      "report": {
+        "Average": {
+          "precision": 0.45390070921985815,
+          "recall": 0.5333333333333333,
+          "f1-score": 0.4904214559386973,
+          "support": 120.0
+        },
+        "Excellent": {
+          "precision": 0.6842105263157895,
+          "recall": 0.65,
+          "f1-score": 0.6666666666666666,
+          "support": 80.0
+        },
+        "Good": {
+          "precision": 0.3953488372093023,
+          "recall": 0.2125,
+          "f1-score": 0.2764227642276423,
+          "support": 80.0
+        },
+        "Poor": {
+          "precision": 0.6714285714285714,
+          "recall": 0.7833333333333333,
+          "f1-score": 0.7230769230769231,
+          "support": 120.0
+        },
+        "accuracy": 0.5675,
+        "macro avg": {
+          "precision": 0.5512221610433804,
+          "recall": 0.5447916666666667,
+          "f1-score": 0.5391469524774823,
+          "support": 400.0
+        },
+        "weighted avg": {
+          "precision": 0.5535106568995473,
+          "recall": 0.5675,
+          "f1-score": 0.552667399883548,
+          "support": 400.0
+        }
+      }
+    },
+    "gradient_boosting": {
+      "accuracy": 0.5375,
+      "report": {
+        "Average": {
+          "precision": 0.432,
+          "recall": 0.45,
+          "f1-score": 0.44081632653061226,
+          "support": 120.0
+        },
+        "Excellent": {
+          "precision": 0.6811594202898551,
+          "recall": 0.5875,
+          "f1-score": 0.6308724832214765,
+          "support": 80.0
+        },
+        "Good": {
+          "precision": 0.3770491803278688,
+          "recall": 0.2875,
+          "f1-score": 0.3262411347517731,
+          "support": 80.0
+        },
+        "Poor": {
+          "precision": 0.6275862068965518,
+          "recall": 0.7583333333333333,
+          "f1-score": 0.6867924528301886,
+          "support": 120.0
+        },
+        "accuracy": 0.5375,
+        "macro avg": {
+          "precision": 0.529448701878569,
+          "recall": 0.5208333333333334,
+          "f1-score": 0.5211805993335126,
+          "support": 400.0
+        },
+        "weighted avg": {
+          "precision": 0.5295175821925103,
+          "recall": 0.5375,
+          "f1-score": 0.5297053574028902,
+          "support": 400.0
+        }
+      }
+    },
+    "logistic_regression": {
+      "accuracy": 0.63,
+      "report": {
+        "Average": {
+          "precision": 0.5461538461538461,
+          "recall": 0.5916666666666667,
+          "f1-score": 0.568,
+          "support": 120.0
+        },
+        "Excellent": {
+          "precision": 0.6962025316455697,
+          "recall": 0.6875,
+          "f1-score": 0.6918238993710691,
+          "support": 80.0
+        },
+        "Good": {
+          "precision": 0.46551724137931033,
+          "recall": 0.3375,
+          "f1-score": 0.391304347826087,
+          "support": 80.0
+        },
+        "Poor": {
+          "precision": 0.7443609022556391,
+          "recall": 0.825,
+          "f1-score": 0.782608695652174,
+          "support": 120.0
+        },
+        "accuracy": 0.63,
+        "macro avg": {
+          "precision": 0.6130586303585913,
+          "recall": 0.6104166666666666,
+          "f1-score": 0.6084342357123325,
+          "support": 400.0
+        },
+        "weighted avg": {
+          "precision": 0.6194983791278216,
+          "recall": 0.63,
+          "f1-score": 0.6218082581350834,
+          "support": 400.0
+        }
+      }
+    },
+    "svm": {
+      "accuracy": 0.605,
+      "report": {
+        "Average": {
+          "precision": 0.5,
+          "recall": 0.6,
+          "f1-score": 0.5454545454545454,
+          "support": 120.0
+        },
+        "Excellent": {
+          "precision": 0.7391304347826086,
+          "recall": 0.6375,
+          "f1-score": 0.6845637583892618,
+          "support": 80.0
+        },
+        "Good": {
+          "precision": 0.43103448275862066,
+          "recall": 0.3125,
+          "f1-score": 0.36231884057971014,
+          "support": 80.0
+        },
+        "Poor": {
+          "precision": 0.7286821705426356,
+          "recall": 0.7833333333333333,
+          "f1-score": 0.7550200803212851,
+          "support": 120.0
+        },
+        "accuracy": 0.605,
+        "macro avg": {
+          "precision": 0.5997117720209663,
+          "recall": 0.5833333333333333,
+          "f1-score": 0.5868393061862006,
+          "support": 400.0
+        },
+        "weighted avg": {
+          "precision": 0.6026376346710366,
+          "recall": 0.605,
+          "f1-score": 0.5995189075265435,
+          "support": 400.0
+        }
+      }
+    }
+  },
+  "best_model": "logistic_regression",
+  "feature_importance": {
+    "study_hours_per_day": 0.15073565256349608,
+    "attendance_rate": 0.10096092576949976,
+    "previous_gpa": 0.22393903836891324,
+    "assignments_completed": 0.0939466535822674,
+    "sleep_hours": 0.10005500550916342,
+    "extracurricular_activities": 0.04125932387254558,
+    "parental_education": 0.03523161171451897,
+    "internet_access": 0.015352972210653968,
+    "tutoring_sessions": 0.046769706427790214,
+    "stress_level": 0.07282642336060129,
+    "motivation_score": 0.09875723329267558,
+    "part_time_job": 0.020165453327874505
+  },
+  "training_samples": 1600,
+  "test_samples": 400
+}

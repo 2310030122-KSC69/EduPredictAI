@@ -1,0 +1,31 @@
+<!-- student_layout.html -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="sb-logo">🎓</div>
+    <div class="sb-title">EduPredict <span>AI</span></div>
+    <button class="sb-close" onclick="toggleSidebar()">✕</button>
+  </div>
+  <div class="sidebar-user">
+    <div class="su-avatar">{{ user.name[:2].upper() if user else 'ST' }}</div>
+    <div class="su-info">
+      <div class="su-name">{{ user.name if user else 'Student' }}</div>
+      <div class="su-role">Student Portal</div>
+    </div>
+  </div>
+  <ul class="sidebar-nav">
+    <li class="nav-section">My Space</li>
+    <li><a href="/student/dashboard" class="sn-link {% if request.path=='/student/dashboard' %}active{% endif %}"><span>📊</span>Dashboard</a></li>
+    <li><a href="/student/profile" class="sn-link {% if request.path=='/student/profile' %}active{% endif %}"><span>👤</span>My Profile</a></li>
+    <li class="nav-section">Academic</li>
+    <li><a href="/student/attendance" class="sn-link {% if request.path=='/student/attendance' %}active{% endif %}"><span>📅</span>Attendance</a></li>
+    <li><a href="/student/marks" class="sn-link {% if request.path=='/student/marks' %}active{% endif %}"><span>📝</span>Marks & Grades</a></li>
+    <li><a href="/student/timetable" class="sn-link {% if request.path=='/student/timetable' %}active{% endif %}"><span>🗓️</span>Timetable</a></li>
+    <li><a href="/student/materials" class="sn-link {% if request.path=='/student/materials' %}active{% endif %}"><span>📚</span>Study Materials</a></li>
+    <li class="nav-section">🎮 Practice</li>
+    <li><a href="/student/quiz" class="sn-link {% if request.path=='/student/quiz' %}active{% endif %}" style="background: linear-gradient(135deg,rgba(91,110,245,.12),rgba(168,85,247,.08)); border: 1px solid rgba(91,110,245,.2); border-radius: 8px; margin: 0 .5rem;"><span>⚡</span>Quiz Arena</a></li>
+    <li class="nav-section">Finance & Info</li>
+    <li><a href="/student/fees" class="sn-link {% if request.path=='/student/fees' %}active{% endif %}"><span>💳</span>Fee Status</a></li>
+    <li class="nav-section">Account</li>
+    <li><a href="/logout" class="sn-link logout"><span>🚪</span>Logout</a></li>
+  </ul>
+</nav>

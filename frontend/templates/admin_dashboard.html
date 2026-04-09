@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard – EduPredict{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block body %}
+<div class="app-layout">
+  {% include "admin_layout.html" %}
+  <div class="app-main">
+    <header class="app-header">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-title">
+        <h1>Dashboard</h1>
+        <span class="header-sub">Welcome back, {{ user.name if user else 'Admin' }}</span>
+      </div>
+      <div class="header-right">
+        <div class="header-date" id="headerDate"></div>
+        <div class="header-avatar">{{ user.name[:2].upper() if user else 'AD' }}</div>
+      </div>
+    </header>
+
+    <div class="page-body">
+      <!-- KPI Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card kpi-blue">
+          <div class="kpi-icon">👥</div>
+          <div class="kpi-content">
+            <div class="kpi-val" id="kpiStudents">—</div>
+            <div class="kpi-label">Total Students</div>
+          </div>
+        </div>
+        <div class="kpi-card kpi-green">
+          <div class="kpi-icon">💰</div>
+          <div class="kpi-content">
+            <div class="kpi-val" id="kpiCollected">—</div>
+            <div class="kpi-label">Fees Collected</div>
+          </div>
+        </div>
+        <div class="kpi-card kpi-orange">
+          <div class="kpi-icon">⚠️</div>
+          <div class="kpi-content">
+            <div class="kpi-val" id="kpiDue">—</div>
+            <div class="kpi-label">Fees Pending</div>
+          </div>
+        </div>
+        <div class="kpi-card kpi-purple">
+          <div class="kpi-icon">📅</div>
+          <div class="kpi-content">
+            <div class="kpi-val" id="kpiAtt">—</div>
+            <div class="kpi-label">Avg Attendance</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><h3>Course Distribution</h3></div>
+          <div class="card-body" id="courseDist"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>ML Model Performance</h3></div>
+          <div class="card-body" id="modelPerf"></div>
+        </div>
+      </div>
+
+      <!-- Recent Students -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Students Overview</h3>
+          <a href="/admin/students" class="btn-sm">View All →</a>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Student</th><th>Roll No</th><th>Course</th><th>Attendance</th><th>Fee Status</th><th>Actions</th></tr></thead>
+              <tbody id="studentsTableBody"><tr><td colspan="6" class="loading-row">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Announcements -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Recent Announcements</h3>
+          <a href="/admin/announcements" class="btn-sm">Manage →</a>
+        </div>
+        <div class="card-body" id="annList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+async function loadDashboard() {
+  const [stats, students, metrics, anns] = await Promise.all([
+    fetch('/api/admin/stats').then(r=>r.json()),
+    fetch('/api/admin/students').then(r=>r.json()),
+    fetch('/api/admin/model-metrics').then(r=>r.json()),
+    fetch('/api/admin/announcements').then(r=>r.json()),
+  ]);
+
+  document.getElementById('kpiStudents').textContent = stats.total_students + ' Students · ' + (stats.total_faculty||0) + ' Faculty';
+  document.getElementById('kpiCollected').textContent = '₹' + (stats.fee_collection/1000).toFixed(0) + 'K';
+  document.getElementById('kpiDue').textContent = '₹' + (stats.fee_pending/1000).toFixed(0) + 'K';
+  document.getElementById('kpiAtt').textContent = stats.avg_attendance + '%';
+
+  // Course Distribution
+  const courses = stats.course_distribution;
+  const colors = ['#6366f1','#22c55e','#f59e0b','#3b82f6'];
+  const total = Object.values(courses).reduce((a,b)=>a+b,0);
+  document.getElementById('courseDist').innerHTML = Object.entries(courses).map(([c,n],i)=>`
+    <div class="bar-row">
+      <span class="bar-label">${c}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(n/total*100).toFixed(0)}%;background:${colors[i%colors.length]}"></div></div>
+      <span class="bar-val">${n}</span>
+    </div>
+  `).join('');
+
+  // Model performance
+  if (metrics.models) {
+    document.getElementById('modelPerf').innerHTML = metrics.models.map((m,i)=>`
+      <div class="bar-row">
+        <span class="bar-label">${m.model.replace(/_/g,' ')}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${m.accuracy}%;background:${colors[i%colors.length]}"></div></div>
+        <span class="bar-val">${m.accuracy}%</span>
+      </div>
+    `).join('');
+  }
+
+  // Students Table (first 5)
+  const tbody = document.getElementById('studentsTableBody');
+  const rows = (Array.isArray(students)?students:[]).slice(0,5).map(s=>`
+    <tr>
+      <td><div class="student-cell"><div class="avatar">${s.avatar||s.name.substring(0,2).toUpperCase()}</div><span>${s.name}</span></div></td>
+      <td><code>${s.roll_no}</code></td>
+      <td>${s.course}</td>
+      <td><span class="badge ${s.avg_attendance>=75?'badge-green':'badge-red'}">${s.avg_attendance}%</span></td>
+      <td><span class="badge ${s.fee_status==='Paid'?'badge-green':s.fee_status==='Partial'?'badge-orange':'badge-red'}">${s.fee_status}</span></td>
+      <td><a href="/admin/students" class="btn-xs">View</a></td>
+    </tr>
+  `).join('');
+  tbody.innerHTML = rows || '<tr><td colspan="6" class="loading-row">No students found</td></tr>';
+
+  // Announcements
+  document.getElementById('annList').innerHTML = (Array.isArray(anns)?anns:[]).slice(0,3).map(a=>`
+    <div class="ann-item">
+      <div class="ann-priority ${a.priority}"></div>
+      <div class="ann-content">
+        <div class="ann-title">${a.title}</div>
+        <div class="ann-body">${a.body.substring(0,100)}${a.body.length>100?'...':''}</div>
+      </div>
+      <div class="ann-date">${a.date}</div>
+    </div>
+  `).join('') || '<div class="empty-state">No announcements yet.</div>';
+}
+
+loadDashboard();
+</script>
+{% endblock %}

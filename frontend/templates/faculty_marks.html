@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Enter Marks – EduPredict{% endblock %}
+{% block body_class %}app-page faculty-page{% endblock %}
+{% block body %}
+<div class="app-layout">
+  {% include "faculty_layout.html" %}
+  <div class="app-main">
+    <header class="app-header">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-title"><h1>Enter Marks</h1><span class="header-sub">Update exam scores for your subjects</span></div>
+      <div class="header-right">
+        <select id="subFilter" class="filter-select" onchange="renderMarks()">
+          <option value="">All Subjects</option>
+        </select>
+      </div>
+    </header>
+
+    <div class="page-body">
+      <div class="card">
+        <div class="card-header">
+          <h3>Student Marks <span class="count-badge" id="countBadge">0</span></h3>
+          <div style="font-size:.8rem;color:var(--muted)">InSem1/25 · InSemLab/25 · InSem2/25 · EndSem/50 · EndLab/25 · Total/150</div>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Student</th><th>Subject</th><th>InSem1<br><small>/25</small></th><th>Lab<br><small>/25</small></th><th>InSem2<br><small>/25</small></th><th>EndSem<br><small>/50</small></th><th>EndLab<br><small>/25</small></th><th>Total</th><th>Grade</th><th>Edit</th></tr></thead>
+              <tbody id="marksBody"><tr><td colspan="10" class="loading-row">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-header"><h3>Edit Marks — <span id="modalTitle"></span></h3><button onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="m_sid"/>
+      <input type="hidden" id="m_sub"/>
+      <div class="form-grid">
+        <div class="form-group"><label>InSem 1 (0–25)</label><input id="m_insem1" type="number" min="0" max="25"/></div>
+        <div class="form-group"><label>InSem Lab (0–25)</label><input id="m_insem_lab" type="number" min="0" max="25"/></div>
+        <div class="form-group"><label>InSem 2 (0–25)</label><input id="m_insem2" type="number" min="0" max="25"/></div>
+        <div class="form-group"><label>End Sem (0–50)</label><input id="m_end_sem" type="number" min="0" max="50"/></div>
+        <div class="form-group"><label>End Lab (0–25)</label><input id="m_end_lab" type="number" min="0" max="25"/></div>
+        <div class="form-group"><label>Live Total</label><div id="liveTotal" style="font-size:1.5rem;font-weight:800;color:var(--accent2);padding:.5rem 0">—/150</div></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveMarks()">Save Marks</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+let allMarks = {};
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.className = `toast toast-${type} show`;
+  t.textContent = msg;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function getGrade(pct) {
+  if(pct>=90) return 'O'; if(pct>=80) return 'A+'; if(pct>=70) return 'A';
+  if(pct>=60) return 'B+'; if(pct>=50) return 'B'; if(pct>=40) return 'C'; return 'F';
+}
+function gradeColor(g) {
+  const m = {O:'var(--green)',A:'var(--green)','A+':'var(--green)','B+':'var(--blue)',B:'var(--blue)',C:'var(--yellow)',F:'var(--red)'};
+  return m[g]||'var(--text)';
+}
+
+async function init() {
+  const [marksRes, profileRes] = await Promise.all([fetch('/api/faculty/marks'), fetch('/api/faculty/profile')]);
+  allMarks = await marksRes.json();
+  const profile = await profileRes.json();
+  const subs = profile.subjects || [];
+  const sf = document.getElementById('subFilter');
+  subs.forEach(s => { const o = document.createElement('option'); o.value=s; o.textContent=s; sf.appendChild(o); });
+  renderMarks();
+}
+
+function renderMarks() {
+  const filterSub = document.getElementById('subFilter').value;
+  const rows = [];
+  for (const [sid, s] of Object.entries(allMarks)) {
+    for (const [sub, m] of Object.entries(s.subjects || {})) {
+      if (filterSub && sub !== filterSub) continue;
+      rows.push({sid, name:s.name, roll:s.roll_no, sub, ...m});
+    }
+  }
+  document.getElementById('countBadge').textContent = rows.length;
+  const tbody = document.getElementById('marksBody');
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No data for selected subject</td></tr>'; return; }
+  tbody.innerHTML = rows.map(r => {
+    const g = r.grade || getGrade(r.percentage||0);
+    return `<tr>
+      <td><div class="student-cell"><div class="avatar">${r.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div><span>${r.name}</span><span class="sub-text">${r.roll}</span></div></td>
+      <td><span style="font-size:.82rem;background:rgba(91,110,245,.1);padding:.2rem .5rem;border-radius:4px;color:var(--accent2)">${r.sub}</span></td>
+      <td style="text-align:center">${r.insem1??0}</td>
+      <td style="text-align:center">${r.insem_lab??0}</td>
+      <td style="text-align:center">${r.insem2??0}</td>
+      <td style="text-align:center">${r.end_sem??0}</td>
+      <td style="text-align:center">${r.end_lab??0}</td>
+      <td style="font-weight:700;text-align:center">${r.total??0}/150</td>
+      <td style="text-align:center"><span style="font-weight:800;color:${gradeColor(g)}">${g}</span></td>
+      <td><button class="btn-xs" onclick="openEdit('${r.sid}','${r.sub}',${r.insem1??0},${r.insem_lab??0},${r.insem2??0},${r.end_sem??0},${r.end_lab??0})">✏️ Edit</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function openEdit(sid, sub, i1, il, i2, es, el) {
+  document.getElementById('m_sid').value = sid;
+  document.getElementById('m_sub').value = sub;
+  document.getElementById('m_insem1').value = i1;
+  document.getElementById('m_insem_lab').value = il;
+  document.getElementById('m_insem2').value = i2;
+  document.getElementById('m_end_sem').value = es;
+  document.getElementById('m_end_lab').value = el;
+  document.getElementById('modalTitle').textContent = sub;
+  updateLiveTotal();
+  document.getElementById('editModal').classList.add('active');
+}
+
+function updateLiveTotal() {
+  const vals = [+document.getElementById('m_insem1').value||0, +document.getElementById('m_insem_lab').value||0,
+    +document.getElementById('m_insem2').value||0, +document.getElementById('m_end_sem').value||0, +document.getElementById('m_end_lab').value||0];
+  const total = vals.reduce((a,b)=>a+b,0);
+  const pct = Math.round(total/150*100);
+  document.getElementById('liveTotal').textContent = `${total}/150 (${pct}%) — ${getGrade(pct)}`;
+}
+
+['m_insem1','m_insem_lab','m_insem2','m_end_sem','m_end_lab'].forEach(id =>
+  document.getElementById(id).addEventListener('input', updateLiveTotal));
+
+function closeModal() { document.getElementById('editModal').classList.remove('active'); }
+
+async function saveMarks() {
+  const sid = document.getElementById('m_sid').value;
+  const body = {
+    subject: document.getElementById('m_sub').value,
+    insem1: +document.getElementById('m_insem1').value,
+    insem_lab: +document.getElementById('m_insem_lab').value,
+    insem2: +document.getElementById('m_insem2').value,
+    end_sem: +document.getElementById('m_end_sem').value,
+    end_lab: +document.getElementById('m_end_lab').value,
+  };
+  const res = await fetch(`/api/faculty/marks/${sid}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  const d = await res.json();
+  if (d.success) {
+    showToast('✅ Marks saved & student notified');
+    closeModal();
+    const r = await fetch('/api/faculty/marks');
+    allMarks = await r.json();
+    renderMarks();
+  } else {
+    showToast(d.error||'Error saving marks', 'error');
+  }
+}
+
+init();
+</script>
+{% endblock %}

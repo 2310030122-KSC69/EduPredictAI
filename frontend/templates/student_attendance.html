@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}My Attendance – EduPredict{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block body %}
+<div class="app-layout">
+  {% include "student_layout.html" %}
+  <div class="app-main">
+    <header class="app-header">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-title"><h1>My Attendance</h1><span class="header-sub">Subject-wise attendance records</span></div>
+    </header>
+    <div class="page-body">
+      <div class="kpi-grid" id="attKpis"></div>
+
+      <div class="card">
+        <div class="card-header"><h3>Subject-wise Attendance</h3></div>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Subject</th><th>Total Classes</th><th>Attended</th><th>Missed</th><th>Percentage</th><th>Status</th></tr></thead>
+              <tbody id="attBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-warning" id="lowCard" style="display:none">
+        <div class="card-header"><h3>⚠️ Low Attendance Subjects</h3></div>
+        <div class="card-body" id="lowList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+async function loadAtt() {
+  const att = await fetch('/api/student/attendance').then(r=>r.json());
+  const entries = Object.entries(att||{});
+  const rates = entries.map(([,d])=>d.rate);
+  const overall = rates.length ? (rates.reduce((a,b)=>a+b,0)/rates.length).toFixed(1) : 0;
+  const safe = entries.filter(([,d])=>d.rate>=75).length;
+  const low  = entries.filter(([,d])=>d.rate<75).length;
+
+  document.getElementById('attKpis').innerHTML = `
+    <div class="kpi-card kpi-blue"><div class="kpi-icon">📊</div><div class="kpi-content"><div class="kpi-val">${overall}%</div><div class="kpi-label">Overall Attendance</div></div></div>
+    <div class="kpi-card kpi-green"><div class="kpi-icon">✅</div><div class="kpi-content"><div class="kpi-val">${safe}</div><div class="kpi-label">Safe Subjects</div></div></div>
+    <div class="kpi-card kpi-red"><div class="kpi-icon">⚠️</div><div class="kpi-content"><div class="kpi-val">${low}</div><div class="kpi-label">Low Subjects</div></div></div>
+    <div class="kpi-card kpi-purple"><div class="kpi-icon">📚</div><div class="kpi-content"><div class="kpi-val">${entries.length}</div><div class="kpi-label">Total Subjects</div></div></div>
+  `;
+
+  document.getElementById('attBody').innerHTML = entries.map(([sub,d])=>`
+    <tr>
+      <td><strong>${sub}</strong></td>
+      <td>${d.total}</td>
+      <td class="text-green">${d.present}</td>
+      <td class="text-red">${d.total-d.present}</td>
+      <td>
+        <div class="mini-bar-wrap">
+          <div class="mini-bar"><div class="mini-fill ${d.rate>=75?'green':'red'}" style="width:${Math.min(d.rate,100)}%"></div></div>
+          <span>${d.rate}%</span>
+        </div>
+      </td>
+      <td><span class="badge ${d.rate>=75?'badge-green':'badge-red'}">${d.status}</span></td>
+    </tr>
+  `).join('') || '<tr><td colspan="6" class="loading-row">No data available</td></tr>';
+
+  const lowSubs = entries.filter(([,d])=>d.rate<75);
+  if(lowSubs.length) {
+    document.getElementById('lowCard').style.display='';
+    document.getElementById('lowList').innerHTML = lowSubs.map(([sub,d])=>`
+      <div class="alert-row">
+        <span class="alert-name">${sub}</span>
+        <span class="badge badge-red">${d.rate}%</span>
+        <span class="alert-note">Need ${Math.ceil((0.75*d.total-d.present)/0.25)} more classes to reach 75%</span>
+      </div>
+    `).join('');
+  }
+}
+loadAtt();
+</script>
+{% endblock %}

@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block title %}Student Dashboard – EduPredict{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block body %}
+<div class="app-layout">
+  {% include "student_layout.html" %}
+  <div class="app-main">
+    <header class="app-header">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-title">
+        <h1>My Dashboard</h1>
+        <span class="header-sub">Welcome, {{ student.name if student else user.name }}</span>
+      </div>
+      <div class="header-right">
+        <div class="header-date" id="headerDate"></div>
+        <div class="notif-bell" onclick="toggleNotif()">
+          🔔 <span class="notif-count" id="notifCount" style="display:none;"></span>
+        </div>
+        <div class="header-avatar">{{ user.name[:2].upper() if user else 'ST' }}</div>
+      </div>
+    </header>
+
+    <!-- Notification Panel -->
+    <div class="notif-panel" id="notifPanel" style="display:none;position:absolute;right:20px;top:72px;width:340px;z-index:200;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.15);border:1px solid #e2e8f0;max-height:400px;overflow-y:auto;">
+      <div style="padding:16px 16px 8px;font-weight:700;border-bottom:1px solid #f1f5f9;">Notifications</div>
+      <div id="notifList"></div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- Student Info Card -->
+      <div class="card student-info-card" style="background:linear-gradient(135deg,#1e293b,#334155);color:#fff;margin-bottom:20px;">
+        <div class="card-body" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+          <div class="avatar" style="width:60px;height:60px;font-size:22px;background:rgba(255,255,255,0.2);">
+            {{ student.avatar if student else user.name[:2].upper() }}
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:20px;font-weight:700;">{{ student.name if student else user.name }}</div>
+            <div style="opacity:0.8;font-size:14px;margin-top:4px;">
+              {{ student.roll_no if student else '' }} &nbsp;•&nbsp;
+              {{ student.course if student else '' }} &nbsp;•&nbsp;
+              Semester {{ student.semester if student else '' }}
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:12px;opacity:0.7;">Admission Year</div>
+            <div style="font-size:18px;font-weight:700;">{{ student.admission_year if student else '' }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid" id="kpiGrid"></div>
+
+      <!-- Today's Timetable -->
+      <div class="card">
+        <div class="card-header"><h3>📌 Today's Schedule</h3><span id="todayDay" class="badge badge-blue"></span></div>
+        <div class="card-body" id="todaySchedule"></div>
+      </div>
+
+      <!-- Marks Summary -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><h3>📝 Marks Summary</h3><a href="/student/marks" class="btn-sm">View Details →</a></div>
+          <div class="card-body" id="marksSummary"></div>
+        </div>
+
+        <!-- Attendance Summary -->
+        <div class="card">
+          <div class="card-header"><h3>📅 Attendance Summary</h3><a href="/student/attendance" class="btn-sm">View Details →</a></div>
+          <div class="card-body" id="attendanceSummary"></div>
+        </div>
+      </div>
+
+      <!-- Performance prediction -->
+      <div class="card" id="perfCard" style="display:none;">
+        <div class="card-header"><h3>🤖 AI Performance Prediction</h3></div>
+        <div class="card-body" id="perfBody"></div>
+      </div>
+
+      <!-- Announcements -->
+      <div class="card">
+        <div class="card-header"><h3>📢 Announcements</h3></div>
+        <div class="card-body" id="annList"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+.notif-item { padding:12px 16px; border-bottom:1px solid #f1f5f9; font-size:13px; }
+.notif-item.unread { background:#eff6ff; }
+.notif-type-warning { border-left:4px solid #f59e0b; }
+.notif-type-success { border-left:4px solid #22c55e; }
+.notif-type-info    { border-left:4px solid #3b82f6; }
+.bar-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.bar-label { width:120px; font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bar-track { flex:1; height:16px; background:#f1f5f9; border-radius:8px; overflow:hidden; }
+.bar-fill  { height:100%; border-radius:8px; transition:width 0.6s; }
+.bar-val   { width:50px; text-align:right; font-size:12px; font-weight:600; }
+.tt-class  { display:flex; gap:12px; align-items:center; padding:8px 0; border-bottom:1px solid #f1f5f9; }
+.tc-time   { font-size:12px; color:#64748b; width:90px; }
+.tc-subject{ font-weight:600; font-size:13px; }
+</style>
+
+<script>
+const dayNames=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+document.getElementById('todayDay').textContent   = dayNames[new Date().getDay()];
+
+let notifVisible = false;
+function toggleNotif() {
+  notifVisible = !notifVisible;
+  document.getElementById('notifPanel').style.display = notifVisible ? '' : 'none';
+}
+
+const gradeColors = {O:'badge-green','A+':'badge-green',A:'badge-blue','B+':'badge-blue',B:'badge-orange',C:'badge-orange',F:'badge-red'};
+
+async function loadDashboard() {
+  const [marks, att, anns, notifs, tt, perf] = await Promise.all([
+    fetch('/api/student/marks').then(r=>r.json()),
+    fetch('/api/student/attendance').then(r=>r.json()),
+    fetch('/api/student/announcements').then(r=>r.json()),
+    fetch('/api/student/notifications').then(r=>r.json()),
+    fetch('/api/student/timetable').then(r=>r.json()),
+    fetch('/api/student/performance').then(r=>r.json()),
+  ]);
+
+  // KPIs
+  const attRates = Object.values(att).map(d=>d.rate);
+  const avgAtt   = attRates.length ? (attRates.reduce((a,b)=>a+b,0)/attRates.length).toFixed(1) : 0;
+  const pcts     = Object.values(marks).map(m=>m.percentage);
+  const avgMarks = pcts.length ? (pcts.reduce((a,b)=>a+b,0)/pcts.length).toFixed(1) : 0;
+  const unread   = notifs.filter(n=>!n.read).length;
+  if (unread > 0) {
+    document.getElementById('notifCount').textContent = unread;
+    document.getElementById('notifCount').style.display = 'inline-block';
+  }
+
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi-card kpi-blue"><div class="kpi-icon">📅</div><div class="kpi-content"><div class="kpi-val">${avgAtt}%</div><div class="kpi-label">Avg Attendance</div></div></div>
+    <div class="kpi-card kpi-green"><div class="kpi-icon">📝</div><div class="kpi-content"><div class="kpi-val">${avgMarks}%</div><div class="kpi-label">Avg Marks</div></div></div>
+    <div class="kpi-card kpi-purple"><div class="kpi-icon">📚</div><div class="kpi-content"><div class="kpi-val">${Object.keys(marks).length}</div><div class="kpi-label">Subjects</div></div></div>
+    <div class="kpi-card kpi-orange"><div class="kpi-icon">🔔</div><div class="kpi-content"><div class="kpi-val">${unread}</div><div class="kpi-label">Notifications</div></div></div>`;
+
+  // Today's timetable
+  const todayName = dayNames[new Date().getDay()];
+  const todaySched = tt[todayName] || {};
+  const ttHtml = Object.entries(todaySched).filter(([,s])=>s!=='Free').map(([slot,sub])=>`
+    <div class="tt-class"><span class="tc-time">🕐 ${slot}</span><span class="tc-subject">${sub}</span></div>`).join('');
+  document.getElementById('todaySchedule').innerHTML = ttHtml || '<div style="color:#94a3b8;text-align:center;padding:16px;">No classes scheduled today 🎉</div>';
+
+  // Marks summary with bar chart
+  document.getElementById('marksSummary').innerHTML = Object.entries(marks).map(([sub,m])=>`
+    <div class="bar-row">
+      <span class="bar-label" title="${sub}">${sub}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${m.percentage}%;background:${m.percentage>=75?'#22c55e':m.percentage>=50?'#f59e0b':'#ef4444'};"></div></div>
+      <span class="bar-val">${m.percentage}% <span class="badge ${gradeColors[m.grade]||'badge-orange'}" style="font-size:10px;">${m.grade}</span></span>
+    </div>`).join('') || '<div style="color:#94a3b8;text-align:center;padding:16px;">No marks data</div>';
+
+  // Attendance summary
+  document.getElementById('attendanceSummary').innerHTML = Object.entries(att).map(([sub,d])=>`
+    <div class="bar-row">
+      <span class="bar-label" title="${sub}">${sub}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${d.rate}%;background:${d.rate>=75?'#22c55e':d.rate>=60?'#f59e0b':'#ef4444'};"></div></div>
+      <span class="bar-val" style="color:${d.rate<75?'#ef4444':'#16a34a'}">${d.rate}%</span>
+    </div>`).join('') || '<div style="color:#94a3b8;text-align:center;padding:16px;">No attendance data</div>';
+
+  // Notifications
+  document.getElementById('notifList').innerHTML = notifs.length
+    ? notifs.slice(0,10).map(n=>`
+      <div class="notif-item ${n.read?'':'unread'} notif-type-${n.type}" onclick="markRead('${n.id}',this)">
+        <div>${n.msg}</div><div style="font-size:11px;color:#94a3b8;margin-top:4px;">${n.date}</div>
+      </div>`).join('')
+    : '<div style="padding:16px;text-align:center;color:#94a3b8;">No notifications</div>';
+
+  // AI Performance
+  if (perf.prediction && perf.prediction !== 'N/A') {
+    document.getElementById('perfCard').style.display = '';
+    const riskColors = {Low:'#22c55e',Medium:'#f59e0b',High:'#ef4444'};
+    document.getElementById('perfBody').innerHTML = `
+      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
+        <div style="text-align:center;min-width:120px;">
+          <div style="font-size:32px;font-weight:700;color:${riskColors[perf.risk_level]||'#3b82f6'}">${perf.prediction}</div>
+          <div style="font-size:13px;color:#64748b;">Predicted Grade</div>
+        </div>
+        <div style="flex:1;">
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+            <span class="badge" style="background:${riskColors[perf.risk_level]||'#3b82f6'};color:#fff;padding:4px 12px;">${perf.risk_level} Risk</span>
+          </div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px;">💡 Improvement Tips:</div>
+          ${(perf.tips||[]).map(t=>`<div style="font-size:13px;color:#475569;margin-bottom:4px;">• ${t}</div>`).join('')}
+        </div>
+      </div>`;
+  }
+
+  // Announcements
+  document.getElementById('annList').innerHTML = anns.slice(0,3).map(a=>{
+    const pc = {high:'#ef4444',medium:'#f59e0b',low:'#22c55e'}[a.priority]||'#3b82f6';
+    return `<div style="padding:12px 0;border-bottom:1px solid #f1f5f9;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:${pc};display:inline-block;"></span>
+        <strong style="font-size:14px;">${a.title}</strong>
+        <span style="font-size:11px;color:#94a3b8;margin-left:auto;">${a.date}</span>
+      </div>
+      <div style="font-size:13px;color:#475569;padding-left:16px;">${a.body}</div>
+    </div>`;
+  }).join('') || '<div style="color:#94a3b8;text-align:center;padding:16px;">No announcements</div>';
+}
+
+async function markRead(nid, el) {
+  await fetch(`/api/student/notifications/${nid}/read`,{method:'PUT'});
+  el.classList.remove('unread');
+}
+
+loadDashboard();
+</script>
+{% endblock %}
