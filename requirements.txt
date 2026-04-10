@@ -3,3 +3,10 @@ scikit-learn>=1.3
 pandas>=2.0
 numpy>=1.24
 joblib>=1.3
+
+# Optional but used in project/report
+scipy>=1.10
+petl>=1.7
+
+# Production / compatibility
+python-dotenv>=1.0
