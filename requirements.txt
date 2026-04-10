@@ -10,3 +10,4 @@ petl>=1.7
 
 # Production / compatibility
 python-dotenv>=1.0
+gunicorn==21.2.0
